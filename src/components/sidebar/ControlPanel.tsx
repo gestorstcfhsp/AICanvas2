@@ -122,7 +122,7 @@ export default function ControlPanel() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="Gemini Flash">Gemini Flash</SelectItem>
-                <SelectItem value="Stable Diffusion" disabled>Stable Diffusion (local)</SelectItem>
+                <SelectItem value="Stable Diffusion">Stable Diffusion (local)</SelectItem>
               </SelectContent>
             </Select>
           </div>
