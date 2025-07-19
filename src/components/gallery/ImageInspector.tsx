@@ -8,6 +8,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { type AIImage } from '@/lib/db';
 import { formatBytes } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
+import { translateText } from '@/ai/flows/translate-text';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface ImageInspectorProps {
   image: AIImage;
@@ -17,6 +19,8 @@ interface ImageInspectorProps {
 
 export default function ImageInspector({ image, open, onOpenChange }: ImageInspectorProps) {
   const [imageUrl, setImageUrl] = useState('');
+  const [translation, setTranslation] = useState<string | null>(null);
+  const [isTranslating, setIsTranslating] = useState(false);
 
   useEffect(() => {
     if (image?.blob) {
@@ -25,6 +29,25 @@ export default function ImageInspector({ image, open, onOpenChange }: ImageInspe
       return () => URL.revokeObjectURL(url);
     }
   }, [image]);
+
+  useEffect(() => {
+    if (open && image) {
+      const getTranslation = async () => {
+        setIsTranslating(true);
+        setTranslation(null);
+        try {
+          const result = await translateText({ text: image.prompt, targetLanguage: 'Spanish' });
+          setTranslation(result.translation);
+        } catch (error) {
+          console.error("Translation failed", error);
+          setTranslation("No se pudo traducir la descripción.");
+        } finally {
+          setIsTranslating(false);
+        }
+      };
+      getTranslation();
+    }
+  }, [open, image]);
 
   if (!image) return null;
 
@@ -57,6 +80,17 @@ export default function ImageInspector({ image, open, onOpenChange }: ImageInspe
                     <div>
                         <h4 className="font-headline text-base font-medium mb-2">Prompt</h4>
                         <p className="rounded-md bg-muted/50 p-3 text-muted-foreground">{image.prompt}</p>
+                    </div>
+                     <div>
+                        <h4 className="font-headline text-base font-medium mb-2">Descripción</h4>
+                        {isTranslating ? (
+                            <div className="space-y-2">
+                                <Skeleton className="h-4 w-full" />
+                                <Skeleton className="h-4 w-2/3" />
+                            </div>
+                        ) : (
+                            <p className="rounded-md bg-muted/50 p-3 text-muted-foreground">{translation}</p>
+                        )}
                     </div>
                     <div>
                         <h4 className="font-headline text-base font-medium mb-2">Metadata</h4>
