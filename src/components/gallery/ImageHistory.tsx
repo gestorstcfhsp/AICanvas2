@@ -32,7 +32,7 @@ export default function ImageHistory() {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
         <Input
-          placeholder="Search by name or tag..."
+          placeholder="Buscar por nombre o etiqueta..."
           className="w-full max-w-md pl-10"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -54,9 +54,9 @@ export default function ImageHistory() {
       ) : (
         <div className="flex flex-1 flex-col items-center justify-center rounded-lg bg-muted/50 p-8 text-center text-muted-foreground">
             <Info className="mb-4 h-16 w-16" />
-            <h3 className="text-xl font-semibold">No Images Found</h3>
+            <h3 className="text-xl font-semibold">No se encontraron imágenes</h3>
             <p className="mt-2 max-w-sm">
-                {searchTerm ? `No images match your search for "${searchTerm}".` : "Use the control panel to generate your first AI image. It will appear here."}
+                {searchTerm ? `No hay imágenes que coincidan con tu búsqueda de "${searchTerm}".` : "Usa el panel de control para generar tu primera imagen con IA. Aparecerá aquí."}
             </p>
         </div>
       )}

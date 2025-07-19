@@ -24,17 +24,17 @@ export default function ControlPanel() {
 
   const handleRefinePrompt = async () => {
     if (!promptText.trim()) {
-      toast({ title: 'Prompt is empty', description: 'Please enter a prompt to refine.', variant: 'destructive' });
+      toast({ title: 'El prompt está vacío', description: 'Por favor, introduce un prompt para refinar.', variant: 'destructive' });
       return;
     }
     setIsRefining(true);
     try {
       const result = await refinePrompt({ promptText, modelName: refineModel });
       setPromptText(result.refinedPrompt);
-      toast({ title: 'Prompt Refined', description: 'Your prompt has been enhanced.' });
+      toast({ title: 'Prompt Refinado', description: 'Tu prompt ha sido mejorado.' });
     } catch (error) {
       console.error('Refine failed:', error);
-      toast({ title: 'Refine Failed', description: 'Could not refine the prompt.', variant: 'destructive' });
+      toast({ title: 'Error al Refinar', description: 'No se pudo refinar el prompt.', variant: 'destructive' });
     } finally {
       setIsRefining(false);
     }
@@ -42,7 +42,7 @@ export default function ControlPanel() {
 
   const handleGenerateImage = async () => {
     if (!promptText.trim()) {
-      toast({ title: 'Prompt is empty', description: 'Please enter a prompt to generate an image.', variant: 'destructive' });
+      toast({ title: 'El prompt está vacío', description: 'Por favor, introduce un prompt para generar una imagen.', variant: 'destructive' });
       return;
     }
     setIsGenerating(true);
@@ -65,10 +65,10 @@ export default function ControlPanel() {
       };
       
       await db.images.add(newImage);
-      toast({ title: 'Image Generated!', description: 'Your new image has been saved to the history.' });
+      toast({ title: '¡Imagen Generada!', description: 'Tu nueva imagen ha sido guardada en el historial.' });
     } catch (error) {
       console.error('Generation failed:', error);
-      toast({ title: 'Generation Failed', description: 'Could not generate the image.', variant: 'destructive' });
+      toast({ title: 'Error al Generar', description: 'No se pudo generar la imagen.', variant: 'destructive' });
     } finally {
       setIsGenerating(false);
     }
@@ -77,7 +77,7 @@ export default function ControlPanel() {
   return (
     <div className="flex h-full flex-col">
       <SidebarHeader>
-        <h2 className="font-headline text-lg font-semibold">Controls</h2>
+        <h2 className="font-headline text-lg font-semibold">Controles</h2>
       </SidebarHeader>
       <SidebarContent className="flex-1 p-4">
         <div className="space-y-6">
@@ -85,7 +85,7 @@ export default function ControlPanel() {
             <Label htmlFor="prompt">Prompt</Label>
             <Textarea
               id="prompt"
-              placeholder="A futuristic cityscape at sunset, synthwave style..."
+              placeholder="Un paisaje urbano futurista al atardecer, estilo synthwave..."
               value={promptText}
               onChange={(e) => setPromptText(e.target.value)}
               rows={6}
@@ -95,11 +95,11 @@ export default function ControlPanel() {
           </div>
           
           <div className="space-y-2">
-            <Label>Prompt Refinement</Label>
+            <Label>Refinamiento de Prompt</Label>
             <div className="flex items-center gap-2">
               <Select value={refineModel} onValueChange={(v) => setRefineModel(v as any)} disabled={isGenerating || isRefining}>
                 <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Select model" />
+                  <SelectValue placeholder="Seleccionar modelo" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Gemini Flash">Gemini Flash</SelectItem>
@@ -115,10 +115,10 @@ export default function ControlPanel() {
           <Separator />
           
           <div className="space-y-2">
-            <Label>Image Generation Model</Label>
+            <Label>Modelo de Generación de Imágenes</Label>
              <Select value={imageModel} onValueChange={(v) => setImageModel(v as any)} disabled={isGenerating || isRefining}>
               <SelectTrigger>
-                <SelectValue placeholder="Select model" />
+                <SelectValue placeholder="Seleccionar modelo" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="Gemini Flash">Gemini Flash</SelectItem>
@@ -132,7 +132,7 @@ export default function ControlPanel() {
       <SidebarFooter className="p-4">
         <Button onClick={handleGenerateImage} disabled={isGenerating || isRefining || !promptText.trim()} className="w-full">
           {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageIcon className="mr-2 h-4 w-4" />}
-          {isGenerating ? 'Generating...' : 'Generate Image'}
+          {isGenerating ? 'Generando...' : 'Generar Imagen'}
         </Button>
       </SidebarFooter>
     </div>

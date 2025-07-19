@@ -42,18 +42,18 @@ export default function TagEditor({ image, children }: TagEditorProps) {
       <PopoverContent className="w-80">
         <div className="grid gap-4">
           <div className="space-y-2">
-            <h4 className="font-medium leading-none">Edit Tags</h4>
-            <p className="text-sm text-muted-foreground">Add or remove tags for this image.</p>
+            <h4 className="font-medium leading-none">Editar Etiquetas</h4>
+            <p className="text-sm text-muted-foreground">Añade o elimina etiquetas para esta imagen.</p>
           </div>
           <div className="flex gap-2">
             <Input
               value={newTag}
               onChange={(e) => setNewTag(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="new-tag"
+              placeholder="nueva-etiqueta"
               className="flex-1"
             />
-            <Button onClick={handleAddTag}>Add</Button>
+            <Button onClick={handleAddTag}>Añadir</Button>
           </div>
           <div className="flex flex-wrap gap-1">
             {image.tags.map((tag) => (
@@ -64,7 +64,7 @@ export default function TagEditor({ image, children }: TagEditorProps) {
                 </button>
               </Badge>
             ))}
-            {image.tags.length === 0 && <p className="text-sm text-muted-foreground">No tags yet.</p>}
+            {image.tags.length === 0 && <p className="text-sm text-muted-foreground">Aún no hay etiquetas.</p>}
           </div>
         </div>
       </PopoverContent>

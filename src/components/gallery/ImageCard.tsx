@@ -52,7 +52,7 @@ export default function ImageCard({ image }: { image: AIImage }) {
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
       
       <div className="absolute top-1 right-1 flex flex-col gap-1.5 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-          <Button size="icon" variant="ghost" className="h-8 w-8 text-white hover:bg-white/20 hover:text-white" onClick={toggleFavorite} aria-label="Favorite">
+          <Button size="icon" variant="ghost" className="h-8 w-8 text-white hover:bg-white/20 hover:text-white" onClick={toggleFavorite} aria-label="Favorito">
             <Heart className={cn("h-4 w-4", image.isFavorite && "fill-red-500 text-red-500")} />
           </Button>
       </div>
@@ -68,30 +68,30 @@ export default function ImageCard({ image }: { image: AIImage }) {
 
       <div className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
         <div className="flex items-center gap-2">
-            <Button size="icon" variant="secondary" onClick={() => setInspectedImage(image)} aria-label="Inspect">
+            <Button size="icon" variant="secondary" onClick={() => setInspectedImage(image)} aria-label="Inspeccionar">
                 <Expand className="h-5 w-5" />
             </Button>
             <TagEditor image={image}>
-              <Button size="icon" variant="secondary" aria-label="Edit Tags">
+              <Button size="icon" variant="secondary" aria-label="Editar Etiquetas">
                   <Tag className="h-5 w-5" />
               </Button>
             </TagEditor>
              <AlertDialog>
                 <AlertDialogTrigger asChild>
-                    <Button size="icon" variant="destructive" aria-label="Delete">
+                    <Button size="icon" variant="destructive" aria-label="Eliminar">
                         <Trash2 className="h-5 w-5" />
                     </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete the image from your history.
+                        Esta acción no se puede deshacer. Esto eliminará permanentemente la imagen de tu historial.
                     </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

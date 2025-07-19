@@ -16,7 +16,7 @@ export default function Header() {
     try {
       const allImages = await db.images.toArray();
       if (allImages.length === 0) {
-        toast({ title: 'Nothing to Export', description: 'Your image history is empty.' });
+        toast({ title: 'Nada que exportar', description: 'Tu historial de imágenes está vacío.' });
         return;
       }
 
@@ -29,14 +29,14 @@ export default function Header() {
       );
       downloadJson(exportableImages, `ai-canvas-export-${Date.now()}.json`);
       toast({
-        title: 'History Exported',
-        description: 'Your image history has been successfully downloaded.',
+        title: 'Historial Exportado',
+        description: 'Tu historial de imágenes ha sido descargado exitosamente.',
       });
     } catch (error) {
       console.error('Export failed:', error);
       toast({
-        title: 'Export Failed',
-        description: 'Could not export your image history.',
+        title: 'Error al Exportar',
+        description: 'No se pudo exportar tu historial de imágenes.',
         variant: 'destructive',
       });
     }
@@ -67,14 +67,14 @@ export default function Header() {
         
         await db.images.bulkAdd(imagesToImport);
         toast({
-          title: 'History Imported',
-          description: 'Successfully imported image history.',
+          title: 'Historial Importado',
+          description: 'El historial de imágenes se importó correctamente.',
         });
       } catch (error) {
         console.error('Import failed:', error);
         toast({
-          title: 'Import Failed',
-          description: 'The selected file is not a valid history export.',
+          title: 'Error al Importar',
+          description: 'El archivo seleccionado no es una exportación de historial válida.',
           variant: 'destructive',
         });
       }
@@ -91,11 +91,11 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
       <SidebarTrigger className="md:hidden" />
-      <h1 className="font-headline text-xl font-semibold">AI Canvas</h1>
+      <h1 className="font-headline text-xl font-semibold">Lienzo IA</h1>
       <div className="ml-auto flex items-center gap-2">
         <Button variant="outline" size="sm" onClick={triggerFileSelect}>
           <Upload className="mr-2 h-4 w-4" />
-          Import
+          Importar
         </Button>
         <input
           type="file"
@@ -106,7 +106,7 @@ export default function Header() {
         />
         <Button variant="outline" size="sm" onClick={handleExport}>
           <Download className="mr-2 h-4 w-4" />
-          Export
+          Exportar
         </Button>
       </div>
     </header>
