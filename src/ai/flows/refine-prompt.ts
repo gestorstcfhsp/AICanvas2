@@ -34,7 +34,7 @@ const prompt = ai.definePrompt({
 
 Original Prompt: {{{promptText}}}
 
-Refined Prompt:`, // Removed the conditional logic for model selection
+Refined Prompt:`,
 });
 
 const refinePromptFlow = ai.defineFlow(
@@ -44,7 +44,12 @@ const refinePromptFlow = ai.defineFlow(
     outputSchema: RefinePromptOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
+    const model =
+      input.modelName === 'Ollama'
+        ? 'ollama/gemma' // Assumes you have the 'gemma' model installed in Ollama
+        : 'googleai/gemini-2.0-flash';
+    
+    const {output} = await prompt(input, {model});
     return output!;
   }
 );
