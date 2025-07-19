@@ -123,7 +123,7 @@ export default function ControlPanel() {
              <Select value={imageModel} onValueChange={(v) => setImageModel(v as any)} disabled={true}>
               <SelectTrigger>
                 <SelectValue placeholder="Seleccionar modelo" />
-              </Trigger>
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="Gemini Flash">Gemini Flash</SelectItem>
                 <SelectItem value="Stable Diffusion" disabled>Stable Diffusion (local)</SelectItem>
