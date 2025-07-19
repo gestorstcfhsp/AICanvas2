@@ -44,10 +44,15 @@ const refinePromptFlow = ai.defineFlow(
     outputSchema: RefinePromptOutputSchema,
   },
   async input => {
-    const model =
-      input.modelName === 'Ollama'
-        ? 'ollama/gemma' // Assumes you have the 'gemma' model installed in Ollama
-        : 'googleai/gemini-2.0-flash';
+    let model;
+    if (input.modelName === 'Ollama') {
+      // Temporarily disable Ollama model until the package issue is resolved.
+      // model = 'ollama/gemma';
+      console.warn("Ollama model is temporarily disabled. Using Gemini Flash instead.");
+      model = 'googleai/gemini-2.0-flash';
+    } else {
+      model = 'googleai/gemini-2.0-flash';
+    }
     
     const {output} = await prompt(input, {model});
     return output!;

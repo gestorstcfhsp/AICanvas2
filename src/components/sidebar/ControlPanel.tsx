@@ -34,7 +34,7 @@ export default function ControlPanel() {
       toast({ title: 'Prompt Refinado', description: 'Tu prompt ha sido mejorado.' });
     } catch (error) {
       console.error('Refine failed:', error);
-      toast({ title: 'Error al Refinar', description: 'No se pudo refinar el prompt.', variant: 'destructive' });
+      toast({ title: 'Error al Refinar', description: 'No se pudo refinar el prompt. Asegúrate de que Ollama está en ejecución si lo estás usando.', variant: 'destructive' });
     } finally {
       setIsRefining(false);
     }
@@ -106,7 +106,7 @@ export default function ControlPanel() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Gemini Flash">Gemini Flash</SelectItem>
-                  <SelectItem value="Ollama">Ollama (local)</SelectItem>
+                  <SelectItem value="Ollama" disabled>Ollama (local)</SelectItem>
                 </SelectContent>
               </Select>
               <Button variant="outline" size="icon" onClick={handleRefinePrompt} disabled={isLoading || !promptText.trim()} className="shrink-0">
@@ -120,7 +120,7 @@ export default function ControlPanel() {
           
           <div className="space-y-2">
             <Label>Modelo de Generación de Imágenes</Label>
-             <Select value={imageModel} onValueChange={(v) => setImageModel(v as any)} disabled={isLoading}>
+             <Select value={imageModel} onValueChange={(v) => setImageModel(v as any)} disabled={true}>
               <SelectTrigger>
                 <SelectValue placeholder="Seleccionar modelo" />
               </SelectTrigger>
