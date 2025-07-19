@@ -106,7 +106,7 @@ export default function ControlPanel() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Gemini Flash">Gemini Flash</SelectItem>
-                  <SelectItem value="Ollama" disabled>Ollama (local)</SelectItem>
+                  <SelectItem value="Ollama">Ollama (local)</SelectItem>
                 </SelectContent>
               </Select>
               <Button variant="outline" size="icon" onClick={handleRefinePrompt} disabled={isLoading || !promptText.trim()} className="shrink-0">
@@ -120,7 +120,7 @@ export default function ControlPanel() {
           
           <div className="space-y-2">
             <Label>Modelo de Generación de Imágenes</Label>
-             <Select value={imageModel} onValueChange={(v) => setImageModel(v as any)} disabled={true}>
+             <Select value={imageModel} onValuecha={(v) => setImageModel(v as any)} disabled={true}>
               <SelectTrigger>
                 <SelectValue placeholder="Seleccionar modelo" />
               </SelectTrigger>
