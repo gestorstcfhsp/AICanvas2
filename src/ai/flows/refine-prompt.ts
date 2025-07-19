@@ -44,8 +44,7 @@ const refinePromptFlow = ai.defineFlow(
     outputSchema: RefinePromptOutputSchema,
   },
   async input => {
-    // Ollama integration is currently disabled due to packaging issues.
-    // We will always use Gemini for now.
+    // Ollama is disabled, always use Gemini
     const model = 'googleai/gemini-2.0-flash';
     
     const {output} = await prompt(input, {model});
