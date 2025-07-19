@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar';
+import { SidebarProvider, Sidebar, SidebarInset, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import Header from '@/components/layout/Header';
 import ControlPanel from '@/components/sidebar/ControlPanel';
 import ImageHistory from '@/components/gallery/ImageHistory';
@@ -10,9 +10,43 @@ import type { AIImage } from '@/lib/db';
 import { db } from '@/lib/db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { AppContext } from '@/context/AppContext';
+import { ImageIcon, History } from 'lucide-react';
+
+type View = 'generate' | 'history';
+
+function AppSidebar({ activeView, setActiveView }: { activeView: View, setActiveView: (view: View) => void }) {
+  return (
+    <SidebarContent className="p-4">
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <SidebarMenuButton 
+            isActive={activeView === 'generate'} 
+            onClick={() => setActiveView('generate')}
+            tooltip="Generar Imagen"
+          >
+            <ImageIcon />
+            <span>Generar Imagen</span>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton 
+            isActive={activeView === 'history'} 
+            onClick={() => setActiveView('history')}
+            tooltip="Historial"
+          >
+            <History />
+            <span>Historial</span>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    </SidebarContent>
+  );
+}
+
 
 export default function Home() {
   const [inspectedImageId, setInspectedImageId] = useState<number | null>(null);
+  const [activeView, setActiveView] = useState<View>('generate');
 
   const inspectedImage = useLiveQuery(() => {
     if (inspectedImageId === null) return undefined;
@@ -27,13 +61,14 @@ export default function Home() {
     <AppContext.Provider value={{ inspectedImage: inspectedImage || null, setInspectedImage }}>
       <SidebarProvider>
         <Sidebar>
-          <ControlPanel />
+          <AppSidebar activeView={activeView} setActiveView={setActiveView} />
         </Sidebar>
         <SidebarInset>
           <div className="flex flex-col h-screen bg-background">
             <Header />
-            <main className="flex-1 overflow-y-auto p-4 md:p-6">
-              <ImageHistory />
+            <main className="flex-1 overflow-y-auto">
+              {activeView === 'generate' && <ControlPanel />}
+              {activeView === 'history' && <ImageHistory />}
             </main>
           </div>
         </SidebarInset>
