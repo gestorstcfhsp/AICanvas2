@@ -13,7 +13,6 @@ import {z} from 'genkit';
 
 const RefinePromptInputSchema = z.object({
   promptText: z.string().describe('The original text prompt to refine.'),
-  modelName: z.enum(['Gemini Flash', 'Ollama']).describe('The model to use for refining the prompt.'),
 });
 export type RefinePromptInput = z.infer<typeof RefinePromptInputSchema>;
 
@@ -44,10 +43,7 @@ const refinePromptFlow = ai.defineFlow(
     outputSchema: RefinePromptOutputSchema,
   },
   async input => {
-    // Ollama is disabled, always use Gemini
-    const model = 'googleai/gemini-2.0-flash';
-    
-    const {output} = await prompt(input, {model});
+    const {output} = await prompt(input);
     return output!;
   }
 );

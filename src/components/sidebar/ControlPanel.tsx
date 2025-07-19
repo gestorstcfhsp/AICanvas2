@@ -17,7 +17,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 export default function ControlPanel() {
   const { toast } = useToast();
   const [promptText, setPromptText] = useState('');
-  const [refineModel, setRefineModel] = useState<'Gemini Flash' | 'Ollama'>('Gemini Flash');
   const [imageModel, setImageModel] = useState<'Gemini Flash' | 'Stable Diffusion'>('Gemini Flash');
   const [isRefining, setIsRefining] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -29,7 +28,7 @@ export default function ControlPanel() {
     }
     setIsRefining(true);
     try {
-      const result = await refinePrompt({ promptText, modelName: refineModel });
+      const result = await refinePrompt({ promptText });
       setPromptText(result.refinedPrompt);
       toast({ title: 'Prompt Refinado', description: 'Tu prompt ha sido mejorado.' });
     } catch (error) {
@@ -100,13 +99,12 @@ export default function ControlPanel() {
           <div className="space-y-2">
             <Label>Refinamiento de Prompt</Label>
             <div className="flex items-center gap-2">
-              <Select value={refineModel} onValueChange={(v) => setRefineModel(v as any)} disabled={isLoading}>
+               <Select defaultValue="gemini-2.0-flash" disabled={true}>
                 <SelectTrigger className="flex-1">
                   <SelectValue placeholder="Seleccionar modelo" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Gemini Flash">Gemini Flash</SelectItem>
-                  <SelectItem value="Ollama" disabled>Ollama (local)</SelectItem>
+                  <SelectItem value="gemini-2.0-flash">Gemini Flash</SelectItem>
                 </SelectContent>
               </Select>
               <Button variant="outline" size="icon" onClick={handleRefinePrompt} disabled={isLoading || !promptText.trim()} className="shrink-0">
