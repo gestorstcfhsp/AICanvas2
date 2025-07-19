@@ -34,7 +34,7 @@ export default function ControlPanel() {
       toast({ title: 'Prompt Refinado', description: 'Tu prompt ha sido mejorado.' });
     } catch (error) {
       console.error('Refine failed:', error);
-      toast({ title: 'Error al Refinar', description: 'No se pudo refinar el prompt. Asegúrate de que Ollama está en ejecución si lo estás usando.', variant: 'destructive' });
+      toast({ title: 'Error al Refinar', description: 'No se pudo refinar el prompt.', variant: 'destructive' });
     } finally {
       setIsRefining(false);
     }
@@ -126,7 +126,7 @@ export default function ControlPanel() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="Gemini Flash">Gemini Flash</SelectItem>
-                <SelectItem value="Stable Diffusion">Stable Diffusion (local)</SelectItem>
+                <SelectItem value="Stable Diffusion" disabled>Stable Diffusion (local)</SelectItem>
               </SelectContent>
             </Select>
           </div>

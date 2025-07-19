@@ -46,9 +46,8 @@ const refinePromptFlow = ai.defineFlow(
   async input => {
     let model;
     if (input.modelName === 'Ollama') {
-      // Temporarily disable Ollama model until the package issue is resolved.
-      // model = 'ollama/gemma';
-      console.warn("Ollama model is temporarily disabled. Using Gemini Flash instead.");
+      // Ollama integration is currently not available due to package issues.
+      // Defaulting to Gemini Flash.
       model = 'googleai/gemini-2.0-flash';
     } else {
       model = 'googleai/gemini-2.0-flash';
