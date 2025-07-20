@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -72,6 +73,7 @@ function AppSidebar({ activeView, setActiveView, imageCount }: { activeView: Vie
 export default function Home() {
   const [inspectedImageId, setInspectedImageId] = useState<number | null>(null);
   const [activeView, setActiveView] = useState<View>('gemini');
+  const [generatedPrompts, setGeneratedPrompts] = useState<string[]>([]);
 
   const inspectedImage = useLiveQuery(() => {
     if (inspectedImageId === null) return undefined;
@@ -97,7 +99,7 @@ export default function Home() {
             <main className="flex-1 overflow-y-auto">
               {activeView === 'gemini' && <GeminiControlPanel />}
               {activeView === 'local' && <LocalControlPanel />}
-              {activeView === 'prompt-generator' && <PromptGeneratorPanel />}
+              {activeView === 'prompt-generator' && <PromptGeneratorPanel generatedPrompts={generatedPrompts} setGeneratedPrompts={setGeneratedPrompts} />}
               {activeView === 'history' && <ImageHistory />}
             </main>
           </div>

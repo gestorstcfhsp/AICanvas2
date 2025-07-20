@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -10,12 +11,16 @@ import { generatePromptsFromDocument } from '@/ai/flows/prompts-from-doc';
 import { Upload, FileText, Copy, Loader2, Check, Sparkles, ClipboardCopy } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-export default function PromptGeneratorPanel() {
+interface PromptGeneratorPanelProps {
+  generatedPrompts: string[];
+  setGeneratedPrompts: (prompts: string[]) => void;
+}
+
+export default function PromptGeneratorPanel({ generatedPrompts, setGeneratedPrompts }: PromptGeneratorPanelProps) {
   const { toast } = useToast();
   const [file, setFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [generatedPrompts, setGeneratedPrompts] = useState<string[]>([]);
   const [copiedPromptIndex, setCopiedPromptIndex] = useState<number | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
