@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { SidebarProvider, Sidebar, SidebarInset, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarMenuBadge } from '@/components/ui/sidebar';
 import Header from '@/components/layout/Header';
-import GeminiControlPanel from '@/components/sidebar/GeminiControlPanel';
+import ControlPanel from '@/components/sidebar/ControlPanel';
 import PromptGeneratorPanel from '@/components/sidebar/PromptGeneratorPanel';
 import ImageHistory from '@/components/gallery/ImageHistory';
 import ImageInspector from '@/components/gallery/ImageInspector';
@@ -112,7 +112,7 @@ export default function Home() {
           <div className="flex flex-col h-screen bg-background">
             <Header />
             <main className="flex-1 overflow-y-auto">
-              {activeView === 'gemini' && <GeminiControlPanel />}
+              {activeView === 'gemini' && <ControlPanel />}
               {activeView === 'prompt-generator' && <PromptGeneratorPanel generatedPrompts={generatedPrompts} setGeneratedPrompts={handleSetGeneratedPrompts} />}
               {activeView === 'history' && <ImageHistory />}
             </main>
