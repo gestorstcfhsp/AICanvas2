@@ -8,6 +8,7 @@ import { Wand2, Image as ImageIcon, Loader2, Bot, Layers, RefreshCw, X } from 'l
 import { useToast } from '@/hooks/use-toast';
 import { refinePrompt } from '@/ai/flows/refine-prompt';
 import { generateImage } from '@/ai/flows/generate-image';
+import { translateText } from '@/ai/flows/translate-text';
 import { db, type AIImage } from '@/lib/db';
 import { dataUrlToBlob, getImageMetadata } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -68,7 +69,7 @@ export default function GeminiControlPanel() {
     const blob = await dataUrlToBlob(result.imageUrl);
     const metadata = await getImageMetadata(result.imageUrl);
 
-    const newImage = {
+    const newImage: Omit<AIImage, 'id'> = {
       name: currentPrompt.substring(0, 50) + '...',
       prompt: currentPrompt,
       refinedPrompt: refinedPromptText || '',
@@ -81,8 +82,16 @@ export default function GeminiControlPanel() {
       createdAt: new Date(),
     };
     
-    await db.images.add(newImage);
-    return newImage;
+    const imageId = await db.images.add(newImage as AIImage);
+    
+    // Translate in background without awaiting
+    translateText({ text: finalPrompt, targetLanguage: 'Spanish' })
+        .then(translationResult => {
+            db.images.update(imageId, { translation: translationResult.translation });
+        })
+        .catch(err => console.error("Auto-translation failed:", err));
+
+    return { ...newImage, id: imageId };
   };
 
   const handleSingleGenerate = async () => {
@@ -269,5 +278,3 @@ export default function GeminiControlPanel() {
     </div>
   );
 }
-
-    

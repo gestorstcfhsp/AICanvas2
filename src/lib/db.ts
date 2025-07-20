@@ -5,6 +5,7 @@ export interface AIImage {
   name: string;
   prompt: string;
   refinedPrompt: string;
+  translation?: string; // Add optional translation field
   model: 'Gemini Flash' | 'Stable Diffusion' | string;
   resolution: { width: number; height: number };
   size: number; // in bytes
@@ -20,8 +21,15 @@ export class AiCanvasDB extends Dexie {
 
   constructor() {
     super('AiCanvasDatabase');
-    this.version(1).stores({
+    this.version(2).stores({ // Bump version for schema change
       images: '++id, name, isFavorite, *tags, createdAt'
+    }).upgrade(tx => {
+        // Migration logic for existing data can be added here if needed
+        // For now, we just allow the new field to be added.
+    });
+    // Fallback for original version
+    this.version(1).stores({
+        images: '++id, name, isFavorite, *tags, createdAt'
     });
   }
 }
