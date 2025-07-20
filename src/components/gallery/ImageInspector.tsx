@@ -63,7 +63,7 @@ export default function ImageInspector({ image, open, onOpenChange }: ImageInspe
             <a href={imageUrl} target="_blank" rel="noopener noreferrer" title="Abrir en una nueva pestaña">
                 <NextImage
                 src={imageUrl}
-                alt={image.name}
+                alt={image.prompt}
                 width={image.resolution.width}
                 height={image.resolution.height}
                 className="max-h-full max-w-full object-contain"
