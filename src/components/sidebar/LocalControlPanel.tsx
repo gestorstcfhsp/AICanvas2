@@ -10,8 +10,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { Server, Image as ImageIcon, Loader2, DownloadCloud } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { generateImageLocal } from '@/ai/flows/generate-image-local';
-import { getLocalConfig } from '@/ai/flows/get-local-config';
 import { db, type AIImage } from '@/lib/db';
 import { dataUrlToBlob, getImageMetadata } from '@/lib/utils';
 
@@ -30,17 +28,36 @@ export default function LocalControlPanel() {
   const handleFetchCheckpoint = async () => {
     setIsFetchingCheckpoint(true);
     try {
-        const result = await getLocalConfig({ apiEndpoint });
-        setCheckpointModel(result.checkpointModel);
+        const baseUrl = new URL(apiEndpoint);
+        const optionsUrl = new URL('/sdapi/v1/options', baseUrl.origin);
+
+        const response = await fetch(optionsUrl.toString(), {
+            method: 'GET',
+            headers: { 'Accept': 'application/json' },
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            throw new Error(`Error de la API local (${response.status}): ${errorBody}`);
+        }
+        
+        const config = await response.json();
+
+        if (!config.sd_model_checkpoint) {
+            throw new Error('No se pudo encontrar el checkpoint en la configuración de la API.');
+        }
+        
+        setCheckpointModel(config.sd_model_checkpoint);
         toast({
             title: 'Checkpoint Obtenido',
-            description: `Modelo base actual: ${result.checkpointModel}`
+            description: `Modelo base actual: ${config.sd_model_checkpoint}`
         });
+
     } catch (error: any) {
         console.error('Failed to fetch checkpoint:', error);
         let description = 'Ha ocurrido un error desconocido.';
         if (error.message?.includes('fetch failed')) {
-          description = 'No se pudo conectar con la API local. Asegúrate de que el servidor esté en ejecución y que la dirección IP sea correcta. Si usas localhost (127.0.0.1), prueba con la IP de tu red local (ej. 192.168.1.X).';
+          description = 'No se pudo conectar con la API local. Asegúrate de que el servidor esté en ejecución, que la dirección IP sea correcta y que la configuración de CORS sea la adecuada.';
         } else {
             description = error.message;
         }
@@ -63,40 +80,69 @@ export default function LocalControlPanel() {
     setIsLoading(true);
     
     try {
-      const result = await generateImageLocal({
-        apiEndpoint,
-        checkpointModel,
-        prompt,
-        negativePrompt,
-        steps: steps[0],
-        cfgScale: cfgScale[0],
-      });
-      
-      const blob = await dataUrlToBlob(result.imageUrl);
-      const metadata = await getImageMetadata(result.imageUrl);
+        const payload: any = {
+            prompt: prompt,
+            negative_prompt: negativePrompt,
+            steps: steps[0],
+            cfg_scale: cfgScale[0],
+            width: 512,
+            height: 512,
+        };
 
-      const newImage: Omit<AIImage, 'id'> = {
-        name: prompt.substring(0, 50) + '...',
-        prompt: prompt,
-        refinedPrompt: '',
-        model: 'Stable Diffusion',
-        resolution: { width: metadata.width, height: metadata.height },
-        size: blob.size,
-        isFavorite: 0 as const,
-        tags: [],
-        blob,
-        createdAt: new Date(),
-        checkpointModel,
-      };
+        if (checkpointModel) {
+            payload.override_settings = {
+                sd_model_checkpoint: checkpointModel
+            };
+        }
+
+        const response = await fetch(apiEndpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            throw new Error(`Error de la API local (${response.status}): ${errorBody}`);
+        }
+        
+        const result = await response.json();
+        
+        if (!result.images || result.images.length === 0) {
+            throw new Error('La API local no devolvió ninguna imagen.');
+        }
+
+        const b64Image = result.images[0];
+        const imageUrl = `data:image/png;base64,${b64Image}`;
       
-      await db.images.add(newImage as AIImage);
-      toast({ title: '¡Imagen Local Generada!', description: 'Tu nueva imagen ha sido guardada en el historial.' });
+        const blob = await dataUrlToBlob(imageUrl);
+        const metadata = await getImageMetadata(imageUrl);
+
+        const newImage: Omit<AIImage, 'id'> = {
+            name: prompt.substring(0, 50) + '...',
+            prompt: prompt,
+            refinedPrompt: '',
+            model: 'Stable Diffusion',
+            resolution: { width: metadata.width, height: metadata.height },
+            size: blob.size,
+            isFavorite: 0 as const,
+            tags: [],
+            blob,
+            createdAt: new Date(),
+            checkpointModel,
+        };
+      
+        await db.images.add(newImage as AIImage);
+        toast({ title: '¡Imagen Local Generada!', description: 'Tu nueva imagen ha sido guardada en el historial.' });
 
     } catch (error: any) {
       console.error('Local generation failed:', error);
       let description = 'Ha ocurrido un error desconocido.';
       if (error.message?.includes('fetch failed')) {
-          description = 'No se pudo conectar con la API local. Asegúrate de que el servidor esté en ejecución y que la dirección IP sea correcta. Si usas localhost (127.0.0.1), prueba con la IP de tu red local (ej. 192.168.1.X).';
+          description = 'No se pudo conectar con la API local. Asegúrate de que el servidor esté en ejecución, que la dirección IP sea correcta y que la configuración de CORS sea la adecuada.';
       } else {
           description = error.message;
       }
