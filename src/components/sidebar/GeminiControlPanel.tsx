@@ -28,9 +28,12 @@ export type BatchResult = {
 const BATCH_RESULTS_STORAGE_KEY = 'batchGenerationResults';
 
 function getFriendlyErrorMessage(error: any): string {
-    const errorMessage = error.message || 'Error desconocido';
+    const errorMessage = error?.message || 'Error desconocido';
     if (errorMessage.includes('429')) {
         return 'La generación falló debido a la alta demanda (límite de frecuencia excedido). Por favor, espera un momento y vuelve a intentarlo.';
+    }
+    if (errorMessage.includes('SAFETY')) {
+        return 'La generación fue bloqueada por filtros de seguridad. Intenta con un prompt diferente.';
     }
     return errorMessage;
 }
@@ -85,9 +88,9 @@ export default function GeminiControlPanel() {
       const result = await refinePrompt({ promptText: prompts[0], model: 'googleai/gemini-2.0-flash' });
       setPromptsText(result.refinedPrompt);
       toast({ title: 'Prompt Refinado', description: 'Tu prompt ha sido mejorado.' });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Refine failed:', error);
-      toast({ title: 'Error al Refinar', description: 'No se pudo refinar el prompt.', variant: 'destructive' });
+      toast({ title: 'Error al Refinar', description: getFriendlyErrorMessage(error), variant: 'destructive' });
     } finally {
       setIsRefining(false);
     }
@@ -139,7 +142,7 @@ export default function GeminiControlPanel() {
     const initialResults: BatchResult[] = promptsToProcess.map(prompt => ({ prompt, status: 'pending' }));
     setBatchResults(prevResults => {
         const newPrompts = promptsToProcess.filter(p => !prevResults.some(pr => pr.prompt === p));
-        const updatedResults = prevResults.map(pr => promptsToProcess.includes(pr.prompt) ? { ...pr, status: 'pending' } : pr);
+        const updatedResults = prevResults.map(pr => promptsToProcess.includes(pr.prompt) ? { ...pr, status: 'pending' as const, error: undefined } : pr);
         return [...updatedResults, ...newPrompts.map(p => ({ prompt: p, status: 'pending' as const }))];
     });
 
@@ -230,7 +233,7 @@ export default function GeminiControlPanel() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="flex items-center space-x-2">
                   <Switch id="refine-batch" checked={refineBatch} onCheckedChange={setRefineBatch} disabled={isLoading} />
-                  <Label htmlFor="refine-batch">Refinar prompts</Label>
+                  <Label htmlFor="refine-batch">Refinar prompts antes de generar</Label>
               </div>
               <Button variant="outline" onClick={handleRefinePrompt} disabled={isLoading || promptsCount !== 1}>
                   {isRefining ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
@@ -258,7 +261,7 @@ export default function GeminiControlPanel() {
                     {failedPromptsCount > 0 && !isBatchGenerating && (
                     <Button variant="outline" size="sm" onClick={retryFailedPrompts} disabled={isLoading}>
                         <RefreshCw className="mr-2 h-4 w-4" />
-                        Reintentar {failedPromptsCount}
+                        Reintentar {failedPromptsCount} Fallidos
                     </Button>
                     )}
                     <Button variant="ghost" size="icon" onClick={handleClearBatchResults} disabled={isLoading} className="h-8 w-8">
@@ -279,5 +282,3 @@ export default function GeminiControlPanel() {
     </div>
   );
 }
-
-  
