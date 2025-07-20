@@ -2,6 +2,7 @@ import Dexie, { type Table } from 'dexie';
 
 export interface AIImage {
   id?: number;
+  name: string;
   prompt: string;
   refinedPrompt: string;
   translation?: string;
@@ -20,8 +21,8 @@ export class AiCanvasDB extends Dexie {
 
   constructor() {
     super('AiCanvasDatabase');
-    this.version(2).stores({
-      images: '++id, prompt, isFavorite, *tags, createdAt'
+    this.version(3).stores({
+      images: '++id, name, prompt, isFavorite, *tags, createdAt'
     });
   }
 }

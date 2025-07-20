@@ -66,7 +66,7 @@ export default function GeminiControlPanel() {
     const blob = await dataUrlToBlob(result.imageUrl);
     const metadata = await getImageMetadata(result.imageUrl);
 
-    const newImage: Omit<AIImage, 'id'> = {
+    const newImage: Omit<AIImage, 'id' | 'name'> = {
       prompt: originalPrompt,
       refinedPrompt: refinedPromptText || '',
       model: 'Gemini Flash' as const,
@@ -78,7 +78,7 @@ export default function GeminiControlPanel() {
       createdAt: new Date(),
     };
     
-    const imageId = await db.images.add(newImage as AIImage);
+    const imageId = await db.images.add({ ...newImage, name: finalPrompt.substring(0, 50) + '...' } as AIImage);
     
     translateText({ text: finalPrompt, targetLanguage: 'Spanish' })
         .then(translationResult => {
@@ -86,7 +86,7 @@ export default function GeminiControlPanel() {
         })
         .catch(err => console.error("Auto-translation failed:", err));
 
-    return { ...newImage, id: imageId };
+    return { ...newImage, id: imageId, name: finalPrompt.substring(0, 50) + '...' };
   };
 
   const handleSingleGenerate = async () => {
@@ -102,7 +102,7 @@ export default function GeminiControlPanel() {
      }
   };
   
-  const handleBatchGenerate = async (promptsToProcess: string[]) => {
+  const handleBatchGenerate = async (promptsToProcess: string[], shouldRefine: boolean) => {
     if (promptsToProcess.length === 0) {
       toast({ title: 'No hay prompts', description: 'Por favor, introduce al menos un prompt.', variant: 'destructive' });
       return;
@@ -112,18 +112,22 @@ export default function GeminiControlPanel() {
     setProgress(0);
     
     const initialResults: BatchResult[] = promptsToProcess.map(prompt => ({ prompt, status: 'pending' }));
-    setBatchResults(initialResults);
+    setBatchResults(prevResults => {
+        const newPrompts = promptsToProcess.filter(p => !prevResults.some(pr => pr.prompt === p));
+        const updatedResults = prevResults.map(pr => promptsToProcess.includes(pr.prompt) ? { ...pr, status: 'pending' } : pr);
+        return [...updatedResults, ...newPrompts.map(p => ({ prompt: p, status: 'pending' as const }))];
+    });
+
     
     let generatedCount = 0;
-    const newResults: BatchResult[] = [];
-
+    
     for (let i = 0; i < promptsToProcess.length; i++) {
         const currentPrompt = promptsToProcess[i];
         let newResult: BatchResult;
         
         try {
             let refinedPromptText: string | null = null;
-            if (refineBatch) {
+            if (shouldRefine) {
                 const refinedResult = await refinePrompt({ promptText: currentPrompt, model: 'googleai/gemini-2.0-flash' });
                 refinedPromptText = refinedResult.refinedPrompt;
             }
@@ -134,11 +138,10 @@ export default function GeminiControlPanel() {
         } catch (error: any) {
             console.error(`Failed to generate for prompt "${currentPrompt}":`, error);
             newResult = { prompt: currentPrompt, status: 'failed', error: error.message || 'Error desconocido' };
-        } finally {
-            setProgress(((i + 1) / promptsToProcess.length) * 100);
-            newResults.push(newResult!);
-            setBatchResults([...newResults, ...initialResults.slice(newResults.length)]);
-        }
+        } 
+        
+        setProgress(((i + 1) / promptsToProcess.length) * 100);
+        setBatchResults(prev => prev.map(r => r.prompt === currentPrompt ? newResult : r));
     }
     
     toast({ title: 'Proceso por Lotes Terminado', description: `Se generaron ${generatedCount} de ${promptsToProcess.length} imágenes.` });
@@ -147,12 +150,14 @@ export default function GeminiControlPanel() {
   
   const initialBatchRun = () => {
     const prompts = batchPrompts.split('\n').filter(p => p.trim() !== '');
-    handleBatchGenerate(prompts);
+    setBatchResults([]);
+    handleBatchGenerate(prompts, refineBatch);
   }
 
   const retryFailedPrompts = () => {
     const failedPrompts = batchResults.filter(r => r.status === 'failed').map(r => r.prompt);
-    handleBatchGenerate(failedPrompts);
+    // Always refine on retry
+    handleBatchGenerate(failedPrompts, true);
   }
   
   const isLoading = isGenerating || isRefining || isBatchGenerating;
@@ -247,12 +252,12 @@ export default function GeminiControlPanel() {
                 {isBatchGenerating ? `Generando... (${Math.round(progress)}%)` : `Generar ${batchPrompts.split('\n').filter(p => p.trim() !== '').length || 0} Imágenes`}
               </Button>
 
-              {batchResults.length > 0 && !isBatchGenerating && (
+              {batchResults.length > 0 && (
                 <div className="space-y-4 pt-4">
                   <Separator />
                   <div className="flex justify-between items-center">
                     <h3 className="font-headline text-lg">Resultados del Lote</h3>
-                    {failedPromptsCount > 0 && (
+                    {failedPromptsCount > 0 && !isBatchGenerating && (
                       <Button variant="outline" size="sm" onClick={retryFailedPrompts} disabled={isLoading}>
                         <RefreshCw className="mr-2 h-4 w-4" />
                         Reintentar {failedPromptsCount} Fallidos
