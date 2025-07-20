@@ -5,10 +5,11 @@ import NextImage from 'next/image';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { type AIImage } from '@/lib/db';
+import { type AIImage, db } from '@/lib/db';
 import { formatBytes } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
+import { translateText } from '@/ai/flows/translate-text';
 
 interface ImageInspectorProps {
   image: AIImage;
@@ -18,6 +19,7 @@ interface ImageInspectorProps {
 
 export default function ImageInspector({ image, open, onOpenChange }: ImageInspectorProps) {
   const [imageUrl, setImageUrl] = useState('');
+  const [isTranslating, setIsTranslating] = useState(false);
 
   useEffect(() => {
     if (image?.blob) {
@@ -27,9 +29,31 @@ export default function ImageInspector({ image, open, onOpenChange }: ImageInspe
     }
   }, [image]);
 
-  if (!image) return null;
+  useEffect(() => {
+    const translateAndSave = async () => {
+      if (image && image.id && !image.translation) {
+        setIsTranslating(true);
+        try {
+          // Use refined prompt if available, otherwise original prompt
+          const textToTranslate = image.refinedPrompt || image.prompt;
+          const result = await translateText({ text: textToTranslate, targetLanguage: 'Spanish' });
+          await db.images.update(image.id, { translation: result.translation });
+        } catch (error) {
+          console.error("On-demand translation failed:", error);
+          // Optionally, handle the error in the UI
+        } finally {
+          setIsTranslating(false);
+        }
+      }
+    };
+    if (open) {
+      translateAndSave();
+    }
+  }, [image, open]);
 
-  const isTranslating = !image.translation;
+  if (!image) return null;
+  
+  const stillTranslating = isTranslating || !image.translation;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -58,12 +82,18 @@ export default function ImageInspector({ image, open, onOpenChange }: ImageInspe
                 <Separator className="my-4"/>
                 <div className="space-y-6 text-sm">
                     <div>
-                        <h4 className="font-headline text-base font-medium mb-2">Prompt</h4>
+                        <h4 className="font-headline text-base font-medium mb-2">Prompt Original</h4>
                         <p className="rounded-md bg-muted/50 p-3 text-muted-foreground">{image.prompt}</p>
                     </div>
+                    {image.refinedPrompt && (
+                      <div>
+                          <h4 className="font-headline text-base font-medium mb-2">Prompt Refinado</h4>
+                          <p className="rounded-md bg-muted/50 p-3 text-muted-foreground">{image.refinedPrompt}</p>
+                      </div>
+                    )}
                      <div>
-                        <h4 className="font-headline text-base font-medium mb-2">Descripción</h4>
-                        {isTranslating ? (
+                        <h4 className="font-headline text-base font-medium mb-2">Descripción (Traducción)</h4>
+                        {stillTranslating ? (
                             <div className="space-y-2 rounded-md bg-muted/50 p-3">
                                 <p className="text-muted-foreground italic text-xs">Traduciendo descripción...</p>
                                 <Skeleton className="h-4 w-full" />

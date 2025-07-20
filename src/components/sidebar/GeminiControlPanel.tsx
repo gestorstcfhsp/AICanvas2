@@ -55,23 +55,19 @@ export default function GeminiControlPanel() {
     }
   };
 
-  const handleGenerateImage = async (currentPrompt: string, refinedPromptText: string | null = null) => {
-    if (!currentPrompt.trim()) {
+  const handleGenerateImage = async (originalPrompt: string, refinedPromptText: string | null) => {
+    if (!originalPrompt.trim()) {
       throw new Error('El prompt no puede estar vacío.');
     }
     
-    let finalPrompt = currentPrompt;
-    if (refinedPromptText) {
-      finalPrompt = refinedPromptText;
-    }
+    const finalPrompt = refinedPromptText || originalPrompt;
 
     const result = await generateImage({ prompt: finalPrompt });
     const blob = await dataUrlToBlob(result.imageUrl);
     const metadata = await getImageMetadata(result.imageUrl);
 
     const newImage: Omit<AIImage, 'id'> = {
-      name: currentPrompt.substring(0, 50) + '...',
-      prompt: currentPrompt,
+      prompt: originalPrompt,
       refinedPrompt: refinedPromptText || '',
       model: 'Gemini Flash' as const,
       resolution: { width: metadata.width, height: metadata.height },
@@ -84,7 +80,6 @@ export default function GeminiControlPanel() {
     
     const imageId = await db.images.add(newImage as AIImage);
     
-    // Translate in background without awaiting
     translateText({ text: finalPrompt, targetLanguage: 'Spanish' })
         .then(translationResult => {
             db.images.update(imageId, { translation: translationResult.translation });

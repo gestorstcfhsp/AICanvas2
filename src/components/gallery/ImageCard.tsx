@@ -48,7 +48,7 @@ export default function ImageCard({ image }: { image: AIImage }) {
 
   return (
     <Card className="group relative aspect-square overflow-hidden rounded-lg shadow-md transition-all hover:shadow-xl">
-      <NextImage src={imageUrl} alt={image.name} fill sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw" className="object-cover transition-transform duration-300 group-hover:scale-105" data-ai-hint="abstract painting" />
+      <NextImage src={imageUrl} alt={image.prompt} fill sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw" className="object-cover transition-transform duration-300 group-hover:scale-105" data-ai-hint="abstract painting" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
       
       <div className="absolute top-1 right-1 flex flex-col gap-1.5 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
@@ -58,7 +58,7 @@ export default function ImageCard({ image }: { image: AIImage }) {
       </div>
 
       <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
-        <p className="truncate text-sm font-semibold">{image.name}</p>
+        <p className="truncate text-sm font-semibold">{image.prompt}</p>
         <div className="mt-1 flex flex-wrap gap-1 h-5 overflow-hidden">
             {image.tags.slice(0, 3).map(tag => (
                 <span key={tag} className="text-xs bg-white/20 rounded-full px-1.5 py-0.5">{tag}</span>
