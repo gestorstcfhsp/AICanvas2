@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { generatePromptsFromDocument } from '@/ai/flows/prompts-from-doc';
-import { Upload, FileText, Copy, Loader2, Check, Sparkles } from 'lucide-react';
+import { Upload, FileText, Copy, Loader2, Check, Sparkles, ClipboardCopy } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function PromptGeneratorPanel() {
@@ -81,6 +81,15 @@ export default function PromptGeneratorPanel() {
         description: 'El prompt ha sido copiado a tu portapapeles.',
     });
   };
+  
+  const handleCopyAllPrompts = () => {
+    const allPrompts = generatedPrompts.join('\n');
+    navigator.clipboard.writeText(allPrompts);
+    toast({
+        title: '¡Todos los Prompts Copiados!',
+        description: 'Ya puedes pegarlos en el panel de generación por lotes.',
+    });
+  }
 
   return (
     <div className="flex h-full items-center justify-center p-4 md:p-6">
@@ -114,7 +123,13 @@ export default function PromptGeneratorPanel() {
           
           {generatedPrompts.length > 0 && (
             <div className="space-y-4">
-                <h3 className="font-headline text-lg">Prompts Sugeridos</h3>
+                <div className="flex justify-between items-center">
+                    <h3 className="font-headline text-lg">Prompts Sugeridos</h3>
+                    <Button variant="outline" size="sm" onClick={handleCopyAllPrompts}>
+                        <ClipboardCopy className="mr-2 h-4 w-4" />
+                        Copiar Todos
+                    </Button>
+                </div>
                 <ScrollArea className="h-72 w-full rounded-md border p-2">
                     <div className="space-y-2 p-2">
                     {generatedPrompts.map((prompt, index) => (
