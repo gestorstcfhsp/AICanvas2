@@ -4,7 +4,8 @@
 import React, { useState, useEffect } from 'react';
 import { SidebarProvider, Sidebar, SidebarInset, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarMenuBadge } from '@/components/ui/sidebar';
 import Header from '@/components/layout/Header';
-import ControlPanel from '@/components/sidebar/ControlPanel';
+import GeminiControlPanel from '@/components/sidebar/GeminiControlPanel';
+import BatchControlPanel from '@/components/sidebar/BatchControlPanel';
 import PromptGeneratorPanel from '@/components/sidebar/PromptGeneratorPanel';
 import ImageHistory from '@/components/gallery/ImageHistory';
 import ImageInspector from '@/components/gallery/ImageInspector';
@@ -12,9 +13,9 @@ import type { AIImage } from '@/lib/db';
 import { db } from '@/lib/db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { AppContext } from '@/context/AppContext';
-import { Sparkles, History, FileText } from 'lucide-react';
+import { Sparkles, History, FileText, Bot } from 'lucide-react';
 
-type View = 'gemini' | 'prompt-generator' | 'history';
+type View = 'gemini' | 'batch' | 'prompt-generator' | 'history';
 
 const PROMPTS_STORAGE_KEY = 'generatedPrompts';
 
@@ -26,10 +27,20 @@ function AppSidebar({ activeView, setActiveView, imageCount }: { activeView: Vie
           <SidebarMenuButton 
             isActive={activeView === 'gemini'} 
             onClick={() => setActiveView('gemini')}
-            tooltip="Generación con IA"
+            tooltip="Generación con Gemini"
           >
             <Sparkles />
-            <span>Generación</span>
+            <span>Gemini</span>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+         <SidebarMenuItem>
+          <SidebarMenuButton 
+            isActive={activeView === 'batch'} 
+            onClick={() => setActiveView('batch')}
+            tooltip="Generación por Lotes (Local)"
+          >
+            <Bot />
+            <span>Lotes (Local)</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
          <SidebarMenuItem>
@@ -112,7 +123,8 @@ export default function Home() {
           <div className="flex flex-col h-screen bg-background">
             <Header />
             <main className="flex-1 overflow-y-auto">
-              {activeView === 'gemini' && <ControlPanel />}
+              {activeView === 'gemini' && <GeminiControlPanel />}
+              {activeView === 'batch' && <BatchControlPanel />}
               {activeView === 'prompt-generator' && <PromptGeneratorPanel generatedPrompts={generatedPrompts} setGeneratedPrompts={handleSetGeneratedPrompts} />}
               {activeView === 'history' && <ImageHistory />}
             </main>
