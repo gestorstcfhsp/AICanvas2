@@ -3,12 +3,13 @@
 /**
  * @fileOverview An AI agent that refines text prompts for image generation.
  *
- * - refinePrompt - A function that refines a text prompt using either Gemini Flash or a local Ollama model.
+ * - refinePrompt - A function that refines a text prompt using a specified model.
  * - RefinePromptInput - The input type for the refinePrompt function.
  * - RefinePromptOutput - The return type for the refinePrompt function.
  */
 
 import {ai} from '@/ai/genkit';
+import {generate} from 'genkit/generate';
 import {z} from 'genkit';
 
 const RefinePromptInputSchema = z.object({
@@ -25,25 +26,25 @@ export async function refinePrompt(input: RefinePromptInput): Promise<RefineProm
   return refinePromptFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'refinePromptPrompt',
-  input: {schema: RefinePromptInputSchema},
-  output: {schema: RefinePromptOutputSchema},
-  prompt: `You are an AI expert in refining prompts for image generation. Your goal is to take the user's prompt and make it more specific, descriptive, and creative, so that it can generate a better image.
-
-Original Prompt: {{{promptText}}}
-
-Refined Prompt:`,
-});
-
 const refinePromptFlow = ai.defineFlow(
   {
     name: 'refinePromptFlow',
     inputSchema: RefinePromptInputSchema,
     outputSchema: RefinePromptOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
+  async ({promptText}) => {
+    const {output} = await generate({
+      model: 'googleai/gemini-2.0-flash',
+      prompt: `You are an AI expert in refining prompts for image generation. Your goal is to take the user's prompt and make it more specific, descriptive, and creative, so that it can generate a better image.
+
+Original Prompt: ${promptText}
+
+Refined Prompt:`,
+      output: {
+        schema: RefinePromptOutputSchema,
+      }
+    });
+
     return output!;
   }
 );

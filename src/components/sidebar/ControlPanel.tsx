@@ -83,7 +83,7 @@ export default function ControlPanel() {
             <CardDescription>Define los parámetros para crear tu próxima obra de arte con IA.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div>
+          <div className="relative">
             <Label htmlFor="prompt">Prompt</Label>
             <Textarea
               id="prompt"
@@ -91,29 +91,15 @@ export default function ControlPanel() {
               value={promptText}
               onChange={(e) => setPromptText(e.target.value)}
               rows={6}
-              className="mt-1"
+              className="mt-1 pr-12"
               disabled={isLoading}
             />
-          </div>
-          
-          <div className="space-y-2">
-            <Label>Refinamiento de Prompt</Label>
-            <div className="flex items-center gap-2">
-               <Select defaultValue="gemini-2.0-flash" disabled={true}>
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Seleccionar modelo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="gemini-2.0-flash">Gemini Flash</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button variant="outline" size="icon" onClick={handleRefinePrompt} disabled={isLoading || !promptText.trim()} className="shrink-0">
+             <Button variant="outline" size="icon" onClick={handleRefinePrompt} disabled={isLoading || !promptText.trim()} className="absolute bottom-2 right-2 shrink-0">
                 {isRefining ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
                  <span className="sr-only">Refinar Prompt</span>
               </Button>
-            </div>
           </div>
-
+          
           <Separator />
           
           <div className="space-y-2">
