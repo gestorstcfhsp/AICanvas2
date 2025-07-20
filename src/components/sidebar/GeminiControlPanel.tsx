@@ -86,7 +86,7 @@ export default function GeminiControlPanel() {
         console.error('Failed to fetch checkpoint:', error);
         let description = 'Ha ocurrido un error desconocido.';
         if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-            description = 'No se pudo conectar con la API local. Comprueba que el servidor esté en ejecución y que la dirección IP sea correcta. Si esta página se sirve por HTTPS, el navegador bloqueará las peticiones a un servidor HTTP local (error de contenido mixto).';
+            description = 'No se pudo conectar con la API local. Comprueba que el servidor esté en ejecución y que la dirección IP sea correcta. Si esta página se sirve por HTTPS, el navegador bloqueará las peticiones a un servidor HTTP local (error de contenido mixto). Revisa la consola del navegador para más detalles.';
         } else {
             description = error.message;
         }
@@ -94,13 +94,14 @@ export default function GeminiControlPanel() {
             title: 'Error al Obtener Checkpoint',
             description,
             variant: 'destructive',
+            duration: 10000,
         });
     } finally {
         setIsFetchingCheckpoint(false);
     }
   };
 
-  const generateWithStableDiffusion = async () => {
+  const generateWithStableDiffusion = async (): Promise<string | null> => {
     try {
       const payload: any = {
           prompt: promptText,
@@ -146,7 +147,7 @@ export default function GeminiControlPanel() {
         } else {
             description = error.message;
         }
-        toast({ title: 'Error en Generación Local', description, variant: 'destructive' });
+        toast({ title: 'Error en Generación Local', description, variant: 'destructive', duration: 10000 });
         return null;
     }
   };
@@ -170,6 +171,7 @@ export default function GeminiControlPanel() {
 
       if (!imageUrl) {
         // Error toast is handled inside the specific generation function
+        setIsGenerating(false);
         return;
       }
 
