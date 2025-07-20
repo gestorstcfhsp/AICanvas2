@@ -33,7 +33,6 @@ export default function LocalControlPanel() {
 
         const response = await fetch(optionsUrl.toString(), {
             method: 'GET',
-            headers: { 'Accept': 'application/json' },
         });
 
         if (!response.ok) {
@@ -56,7 +55,7 @@ export default function LocalControlPanel() {
     } catch (error: any) {
         console.error('Failed to fetch checkpoint:', error);
         let description = 'Ha ocurrido un error desconocido.';
-        if (error.name === 'TypeError' && error.message.includes('fetch failed')) {
+        if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
             description = 'No se pudo conectar con la API local. Comprueba que el servidor esté en ejecución y que la dirección IP sea correcta. Si esta página se sirve por HTTPS, el navegador bloqueará las peticiones a un servidor HTTP local (error de contenido mixto).';
         } else {
             description = error.message;
@@ -99,7 +98,6 @@ export default function LocalControlPanel() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Accept': 'application/json',
             },
             body: JSON.stringify(payload),
         });
@@ -141,8 +139,8 @@ export default function LocalControlPanel() {
     } catch (error: any) {
       console.error('Local generation failed:', error);
       let description = 'Ha ocurrido un error desconocido.';
-       if (error.name === 'TypeError' && error.message.includes('fetch failed')) {
-            description = 'No se pudo conectar con la API local. Comprueba que el servidor esté en ejecución y que la dirección IP sea correcta. Si esta página se sirve por HTTPS, el navegador bloqueará las peticiones a un servidor HTTP local (error de contenido mixto). Asegúrate de que los CORS están bien configurados.';
+       if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+            description = 'No se pudo conectar con la API local. Comprueba que el servidor esté en ejecución, que la dirección IP sea correcta y que no haya un problema de contenido mixto (página HTTPS llamando a servidor HTTP). Asegúrate de que los CORS están bien configurados.';
         } else {
             description = error.message;
         }
