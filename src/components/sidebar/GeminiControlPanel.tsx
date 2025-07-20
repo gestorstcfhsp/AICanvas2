@@ -1,10 +1,11 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Wand2, Image as ImageIcon, Loader2, Bot, Layers, RefreshCw, X, Trash2 } from 'lucide-react';
+import { Wand2, Layers, RefreshCw, X, Trash2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { refinePrompt } from '@/ai/flows/refine-prompt';
 import { generateImage } from '@/ai/flows/generate-image';
@@ -12,7 +13,6 @@ import { translateText } from '@/ai/flows/translate-text';
 import { db, type AIImage } from '@/lib/db';
 import { dataUrlToBlob, getImageMetadata } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from '@/components/ui/separator';
@@ -37,10 +37,8 @@ function getFriendlyErrorMessage(error: any): string {
 
 export default function GeminiControlPanel() {
   const { toast } = useToast();
-  const [promptText, setPromptText] = useState('');
-  const [batchPrompts, setBatchPrompts] = useState('');
+  const [promptsText, setPromptsText] = useState('');
   const [isRefining, setIsRefining] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
   const [isBatchGenerating, setIsBatchGenerating] = useState(false);
   const [refineBatch, setRefineBatch] = useState(true);
   const [progress, setProgress] = useState(0);
@@ -51,7 +49,6 @@ export default function GeminiControlPanel() {
       const storedResults = localStorage.getItem(BATCH_RESULTS_STORAGE_KEY);
       if (storedResults) {
         const parsedResults: BatchResult[] = JSON.parse(storedResults);
-        // Reset pending states on load, as they were interrupted
         const restoredResults = parsedResults.map(r => 
             r.status === 'pending' ? { ...r, status: 'failed' as const, error: 'Proceso interrumpido' } : r
         );
@@ -77,14 +74,16 @@ export default function GeminiControlPanel() {
 
 
   const handleRefinePrompt = async () => {
-    if (!promptText.trim()) {
-      toast({ title: 'El prompt está vacío', description: 'Por favor, introduce un prompt para refinar.', variant: 'destructive' });
+    const prompts = promptsText.split('\n').filter(p => p.trim() !== '');
+    if (prompts.length !== 1) {
+      toast({ title: 'Refinamiento no disponible', description: 'Por favor, introduce un único prompt para refinar.', variant: 'destructive' });
       return;
     }
+    
     setIsRefining(true);
     try {
-      const result = await refinePrompt({ promptText, model: 'googleai/gemini-2.0-flash' });
-      setPromptText(result.refinedPrompt);
+      const result = await refinePrompt({ promptText: prompts[0], model: 'googleai/gemini-2.0-flash' });
+      setPromptsText(result.refinedPrompt);
       toast({ title: 'Prompt Refinado', description: 'Tu prompt ha sido mejorado.' });
     } catch (error) {
       console.error('Refine failed:', error);
@@ -126,19 +125,6 @@ export default function GeminiControlPanel() {
         .catch(err => console.error("Auto-translation failed:", err));
 
     return { ...newImage, id: imageId, name: finalPrompt.substring(0, 50) + '...' };
-  };
-
-  const handleSingleGenerate = async () => {
-     setIsGenerating(true);
-     try {
-        await handleGenerateImage(promptText, null);
-        toast({ title: '¡Imagen Generada!', description: 'Tu nueva imagen ha sido guardada en el historial.' });
-     } catch (error: any) {
-        console.error('Generation failed:', error);
-        toast({ title: 'Error al Generar', description: getFriendlyErrorMessage(error), variant: 'destructive' });
-     } finally {
-        setIsGenerating(false);
-     }
   };
   
   const handleBatchGenerate = async (promptsToProcess: string[], shouldRefine: boolean) => {
@@ -188,7 +174,7 @@ export default function GeminiControlPanel() {
   };
   
   const initialBatchRun = () => {
-    const prompts = batchPrompts.split('\n').filter(p => p.trim() !== '');
+    const prompts = promptsText.split('\n').filter(p => p.trim() !== '');
     setBatchResults([]);
     handleBatchGenerate(prompts, refineBatch);
   }
@@ -202,8 +188,9 @@ export default function GeminiControlPanel() {
     setBatchResults([]);
   }
   
-  const isLoading = isGenerating || isRefining || isBatchGenerating;
+  const isLoading = isRefining || isBatchGenerating;
   const failedPromptsCount = batchResults.filter(r => r.status === 'failed').length;
+  const promptsCount = promptsText.split('\n').filter(p => p.trim() !== '').length;
 
   return (
     <div className="flex h-full items-center justify-center p-4 md:p-6">
@@ -212,119 +199,85 @@ export default function GeminiControlPanel() {
           <CardTitle className="font-headline text-2xl">Controles de Generación (Gemini)</CardTitle>
           <CardDescription>Define los parámetros para crear tu próxima obra de arte con los modelos de Google.</CardDescription>
         </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="single" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="single" disabled={isLoading}><Bot className="mr-2"/>Prompt Único</TabsTrigger>
-              <TabsTrigger value="batch" disabled={isLoading}><Layers className="mr-2"/>Múltiples Prompts</TabsTrigger>
-            </TabsList>
-            <TabsContent value="single" className="space-y-4 pt-4">
-              <div className="space-y-2">
-                <Label htmlFor="prompt">Prompt</Label>
-                 <div className="relative">
-                    <Textarea
-                    id="prompt"
-                    placeholder="Un paisaje urbano futurista al atardecer, estilo synthwave..."
-                    value={promptText}
-                    onChange={(e) => setPromptText(e.target.value)}
-                    rows={6}
-                    disabled={isLoading}
-                    className="pr-10"
-                    />
-                    {promptText && (
-                        <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-1 top-1.5 h-7 w-7 text-muted-foreground"
-                        onClick={() => setPromptText('')}
-                        >
-                        <X className="h-5 w-5" />
-                        <span className="sr-only">Limpiar prompt</span>
-                        </Button>
-                    )}
-                </div>
-                <Button variant="outline" onClick={handleRefinePrompt} disabled={isLoading || !promptText.trim()} className="w-full md:w-auto">
-                  {isRefining ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
-                  {isRefining ? 'Refinando...' : 'Refinar Prompt'}
-                </Button>
-              </div>
-              <Button onClick={handleSingleGenerate} disabled={isLoading || !promptText.trim()} className="w-full !mt-6">
-                {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageIcon className="mr-2 h-4 w-4" />}
-                {isGenerating ? 'Generando...' : 'Generar Imagen'}
-              </Button>
-            </TabsContent>
-            <TabsContent value="batch" className="space-y-4 pt-4">
-              <div className="space-y-2">
+        <CardContent className="space-y-6">
+            <div className="space-y-2">
                 <Label htmlFor="batch-prompts">Prompts (uno por línea)</Label>
                 <div className="relative">
                     <Textarea
                     id="batch-prompts"
-                    placeholder="Un gato astronauta en la luna
-Un bosque encantado con setas brillantes
-Una ciudad submarina..."
-                    value={batchPrompts}
-                    onChange={(e) => setBatchPrompts(e.target.value)}
+                    placeholder="Un gato astronauta en la luna..."
+                    value={promptsText}
+                    onChange={(e) => setPromptsText(e.target.value)}
                     rows={8}
                     disabled={isLoading}
                     className="pr-10"
                     />
-                    {batchPrompts && (
+                    {promptsText && (
                         <Button
                         variant="ghost"
                         size="icon"
                         className="absolute right-1 top-1.5 h-7 w-7 text-muted-foreground"
-                        onClick={() => setBatchPrompts('')}
+                        onClick={() => setPromptsText('')}
+                        disabled={isLoading}
                         >
                         <X className="h-5 w-5" />
                         <span className="sr-only">Limpiar prompts</span>
                         </Button>
                     )}
                 </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch id="refine-batch" checked={refineBatch} onCheckedChange={setRefineBatch} disabled={isLoading} />
-                <Label htmlFor="refine-batch">Refinar prompts antes de generar</Label>
-              </div>
-              {isBatchGenerating && (
-                <div className="space-y-2">
-                    <Label>Progreso</Label>
-                    <Progress value={progress} className="w-full" />
-                </div>
-              )}
-              <Button onClick={initialBatchRun} disabled={isLoading || !batchPrompts.trim()} className="w-full !mt-6">
-                {isBatchGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Layers className="mr-2 h-4 w-4" />}
-                {isBatchGenerating ? `Generando... (${Math.round(progress)}%)` : `Generar ${batchPrompts.split('\n').filter(p => p.trim() !== '').length || 0} Imágenes`}
-              </Button>
+            </div>
 
-              {batchResults.length > 0 && (
-                <div className="space-y-4 pt-4">
-                  <Separator />
-                  <div className="flex justify-between items-center">
-                    <h3 className="font-headline text-lg">Resultados del Lote</h3>
-                     <div className="flex items-center gap-2">
-                        {failedPromptsCount > 0 && !isBatchGenerating && (
-                        <Button variant="outline" size="sm" onClick={retryFailedPrompts} disabled={isLoading}>
-                            <RefreshCw className="mr-2 h-4 w-4" />
-                            Reintentar {failedPromptsCount}
-                        </Button>
-                        )}
-                        <Button variant="ghost" size="icon" onClick={handleClearBatchResults} disabled={isLoading} className="h-8 w-8">
-                            <Trash2 className="h-4 w-4" />
-                            <span className="sr-only">Limpiar resultados del lote</span>
-                        </Button>
-                    </div>
-                  </div>
-                  <div className="max-h-60 space-y-2 overflow-y-auto rounded-md border p-2">
-                    {batchResults.map((result, index) => (
-                      <BatchResultItem key={`${result.prompt}-${index}`} result={result} />
-                    ))}
-                  </div>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex items-center space-x-2">
+                  <Switch id="refine-batch" checked={refineBatch} onCheckedChange={setRefineBatch} disabled={isLoading} />
+                  <Label htmlFor="refine-batch">Refinar prompts</Label>
+              </div>
+              <Button variant="outline" onClick={handleRefinePrompt} disabled={isLoading || promptsCount !== 1}>
+                  {isRefining ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+                  {isRefining ? 'Refinando...' : 'Refinar Prompt Único'}
+              </Button>
+            </div>
+
+            {isBatchGenerating && (
+            <div className="space-y-2">
+                <Label>Progreso</Label>
+                <Progress value={progress} className="w-full" />
+            </div>
+            )}
+            <Button onClick={initialBatchRun} disabled={isLoading || !promptsText.trim()} className="w-full">
+            {isBatchGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Layers className="mr-2 h-4 w-4" />}
+            {isBatchGenerating ? `Generando... (${Math.round(progress)}%)` : `Generar ${promptsCount > 0 ? promptsCount : ''} ${promptsCount === 1 ? 'Imagen' : 'Imágenes'}`}
+            </Button>
+
+            {batchResults.length > 0 && (
+            <div className="space-y-4 pt-4">
+                <Separator />
+                <div className="flex justify-between items-center">
+                <h3 className="font-headline text-lg">Resultados del Lote</h3>
+                    <div className="flex items-center gap-2">
+                    {failedPromptsCount > 0 && !isBatchGenerating && (
+                    <Button variant="outline" size="sm" onClick={retryFailedPrompts} disabled={isLoading}>
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Reintentar {failedPromptsCount}
+                    </Button>
+                    )}
+                    <Button variant="ghost" size="icon" onClick={handleClearBatchResults} disabled={isLoading} className="h-8 w-8">
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Limpiar resultados del lote</span>
+                    </Button>
                 </div>
-              )}
-            </TabsContent>
-          </Tabs>
+                </div>
+                <div className="max-h-60 space-y-2 overflow-y-auto rounded-md border p-2">
+                {batchResults.map((result, index) => (
+                    <BatchResultItem key={`${result.prompt}-${index}`} result={result} />
+                ))}
+                </div>
+            </div>
+            )}
         </CardContent>
       </Card>
     </div>
   );
 }
+
+  
