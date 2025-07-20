@@ -18,7 +18,6 @@ export default function ImageHistory() {
         return db.images.orderBy('createdAt').reverse().toArray();
       }
       
-      // A simple search: checks if name contains search term or if any tag is an exact match.
       return db.images.filter(img => 
         img.name.toLowerCase().includes(lowerCaseSearch) || 
         img.tags.some(tag => tag.toLowerCase() === lowerCaseSearch)
@@ -26,17 +25,34 @@ export default function ImageHistory() {
     },
     [searchTerm],
   );
+  
+  const getTitle = () => {
+    if (!images) {
+        return 'Cargando Imágenes...';
+    }
+    const count = images.length;
+    if (searchTerm.trim() && count > 0) {
+        return `${count} Imágenes Encontradas`;
+    }
+    if (count === 1) {
+        return '1 Imagen Guardada';
+    }
+    return `${count} Imágenes Guardadas`;
+  };
 
   return (
     <div className="flex h-full flex-col gap-6 p-4 md:p-6">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="Buscar por nombre o etiqueta..."
-          className="w-full max-w-md pl-10"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <h2 className="font-headline text-2xl font-semibold">{getTitle()}</h2>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nombre o etiqueta..."
+            className="w-full max-w-md pl-10"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
       </div>
       
       {!images ? (
@@ -46,7 +62,7 @@ export default function ImageHistory() {
             ))}
         </div>
       ) : images.length > 0 ? (
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+        <div className="grid flex-1 grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
           {images.map((image) => (
             <ImageCard key={image.id} image={image} />
           ))}

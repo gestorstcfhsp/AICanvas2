@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { SidebarProvider, Sidebar, SidebarInset, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
+import { SidebarProvider, Sidebar, SidebarInset, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarMenuBadge } from '@/components/ui/sidebar';
 import Header from '@/components/layout/Header';
 import GeminiControlPanel from '@/components/sidebar/GeminiControlPanel';
 import LocalControlPanel from '@/components/sidebar/LocalControlPanel';
@@ -15,7 +15,7 @@ import { Sparkles, Server, History } from 'lucide-react';
 
 type View = 'gemini' | 'local' | 'history';
 
-function AppSidebar({ activeView, setActiveView }: { activeView: View, setActiveView: (view: View) => void }) {
+function AppSidebar({ activeView, setActiveView, imageCount }: { activeView: View, setActiveView: (view: View) => void, imageCount?: number }) {
   return (
     <SidebarContent className="p-4">
       <SidebarMenu>
@@ -47,6 +47,9 @@ function AppSidebar({ activeView, setActiveView }: { activeView: View, setActive
           >
             <History />
             <span>Historial</span>
+            {imageCount !== undefined && imageCount > 0 && (
+                <SidebarMenuBadge>{imageCount}</SidebarMenuBadge>
+            )}
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>
@@ -63,6 +66,9 @@ export default function Home() {
     if (inspectedImageId === null) return undefined;
     return db.images.get(inspectedImageId);
   }, [inspectedImageId]);
+  
+  const imageCount = useLiveQuery(() => db.images.count());
+
 
   const setInspectedImage = (image: AIImage | null) => {
     setInspectedImageId(image?.id ?? null);
@@ -72,7 +78,7 @@ export default function Home() {
     <AppContext.Provider value={{ inspectedImage: inspectedImage || null, setInspectedImage }}>
       <SidebarProvider>
         <Sidebar>
-          <AppSidebar activeView={activeView} setActiveView={setActiveView} />
+          <AppSidebar activeView={activeView} setActiveView={setActiveView} imageCount={imageCount} />
         </Sidebar>
         <SidebarInset>
           <div className="flex flex-col h-screen bg-background">
