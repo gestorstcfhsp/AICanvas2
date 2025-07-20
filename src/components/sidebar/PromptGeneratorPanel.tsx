@@ -1,16 +1,14 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { generatePromptsFromDocument } from '@/ai/flows/prompts-from-doc';
-import { Upload, FileText, Copy, Loader2, Check, Sparkles, ClipboardCopy, ClipboardPaste, Trash2 } from 'lucide-react';
+import { Upload, FileText, Copy, Loader2, Check, Sparkles, ClipboardCopy, Trash2, X } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from '@/components/ui/textarea';
 
 interface PromptGeneratorPanelProps {
@@ -20,66 +18,49 @@ interface PromptGeneratorPanelProps {
 
 export default function PromptGeneratorPanel({ generatedPrompts, setGeneratedPrompts }: PromptGeneratorPanelProps) {
   const { toast } = useToast();
-  const [file, setFile] = useState<File | null>(null);
-  const [pastedText, setPastedText] = useState('');
+  const [documentContent, setDocumentContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('file');
   const [copiedPromptIndex, setCopiedPromptIndex] = useState<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       const isTxt = selectedFile.name.toLowerCase().endsWith('.txt');
       const isMd = selectedFile.name.toLowerCase().endsWith('.md');
       
       if (isTxt || isMd) {
-        setFile(selectedFile);
-        setGeneratedPrompts([]);
+        try {
+          const text = await selectedFile.text();
+          setDocumentContent(text);
+          setGeneratedPrompts([]);
+        } catch (error) {
+           toast({
+            title: 'Error al leer el archivo',
+            description: 'No se pudo leer el contenido del archivo seleccionado.',
+            variant: 'destructive',
+          });
+        }
       } else {
         toast({
           title: 'Formato de archivo no soportado',
           description: 'Por favor, sube un archivo .txt o .md.',
           variant: 'destructive',
         });
-        e.target.value = '';
       }
+      // Reset file input to allow selecting the same file again
+      e.target.value = '';
     }
-  };
-
-  const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
-    // Clear the other input to avoid confusion
-    if (tab === 'file') {
-      setPastedText('');
-    } else {
-      setFile(null);
-    }
-    setGeneratedPrompts([]);
   };
 
   const handleGenerate = async () => {
-    let documentContent = '';
-
-    if (activeTab === 'paste') {
-        documentContent = pastedText;
-        if (!documentContent.trim()) {
-            toast({
-                title: 'No hay texto para procesar',
-                description: 'Por favor, pega algún contenido en el área de texto.',
-                variant: 'destructive',
-            });
-            return;
-        }
-    } else {
-        if (!file) {
-            toast({
-                title: 'No se ha seleccionado ningún archivo',
-                description: 'Por favor, sube un documento para generar prompts.',
-                variant: 'destructive',
-            });
-            return;
-        }
-        documentContent = await file.text();
+    if (!documentContent.trim()) {
+        toast({
+            title: 'No hay texto para procesar',
+            description: 'Por favor, pega o sube un documento.',
+            variant: 'destructive',
+        });
+        return;
     }
     
     setIsLoading(true);
@@ -131,7 +112,10 @@ export default function PromptGeneratorPanel({ generatedPrompts, setGeneratedPro
     });
   }
 
-  const canGenerate = (activeTab === 'file' && !!file) || (activeTab === 'paste' && !!pastedText.trim());
+  const handleClearContent = () => {
+    setDocumentContent('');
+    setGeneratedPrompts([]);
+  };
 
   return (
     <div className="flex h-full items-center justify-center p-4 md:p-6">
@@ -144,29 +128,41 @@ export default function PromptGeneratorPanel({ generatedPrompts, setGeneratedPro
           <CardDescription>Extrae la esencia de un documento para crear prompts de imágenes con la ayuda de la IA.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <Tabs defaultValue="file" onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="file" disabled={isLoading}><Upload className="mr-2"/>Subir Archivo</TabsTrigger>
-              <TabsTrigger value="paste" disabled={isLoading}><ClipboardPaste className="mr-2"/>Pegar Texto</TabsTrigger>
-            </TabsList>
-            <TabsContent value="file" className="space-y-4 pt-4">
-              <Label htmlFor="file-upload">Subir Documento (.txt, .md)</Label>
-               <Input id="file-upload" type="file" accept=".txt,.md" onChange={handleFileChange} disabled={isLoading}/>
-            </TabsContent>
-            <TabsContent value="paste" className="space-y-4 pt-4">
-               <Label htmlFor="paste-area">Contenido del Documento</Label>
-               <Textarea
-                    id="paste-area"
-                    placeholder="Pega aquí el contenido de tu documento..."
-                    value={pastedText}
-                    onChange={(e) => setPastedText(e.target.value)}
-                    rows={8}
-                    disabled={isLoading}
-                />
-            </TabsContent>
-          </Tabs>
+            <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                    <Label htmlFor="paste-area">Contenido del Documento</Label>
+                    <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={isLoading}>
+                        <Upload className="mr-2 h-4 w-4" />
+                        Subir Archivo (.txt, .md)
+                    </Button>
+                    <input ref={fileInputRef} type="file" accept=".txt,.md" onChange={handleFileChange} className="hidden" />
+                </div>
+               <div className="relative">
+                    <Textarea
+                        id="paste-area"
+                        placeholder="Pega aquí el contenido de tu documento o súbelo usando el botón..."
+                        value={documentContent}
+                        onChange={(e) => setDocumentContent(e.target.value)}
+                        rows={8}
+                        disabled={isLoading}
+                        className="pr-10"
+                    />
+                    {documentContent && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-1 top-1.5 h-7 w-7 text-muted-foreground"
+                            onClick={handleClearContent}
+                            disabled={isLoading}
+                        >
+                        <X className="h-5 w-5" />
+                        <span className="sr-only">Limpiar contenido</span>
+                        </Button>
+                    )}
+               </div>
+            </div>
 
-          <Button onClick={handleGenerate} disabled={!canGenerate || isLoading} className="w-full !mt-6">
+          <Button onClick={handleGenerate} disabled={!documentContent.trim() || isLoading} className="w-full !mt-6">
             {isLoading ? <Loader2 className="mr-2 animate-spin" /> : <Sparkles className="mr-2" />}
             {isLoading ? 'Generando...' : 'Generar Prompts'}
           </Button>
