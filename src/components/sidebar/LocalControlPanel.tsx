@@ -38,9 +38,15 @@ export default function LocalControlPanel() {
         });
     } catch (error: any) {
         console.error('Failed to fetch checkpoint:', error);
+        let description = 'Ha ocurrido un error desconocido.';
+        if (error.message?.includes('fetch failed')) {
+          description = 'No se pudo conectar con la API local. Asegúrate de que tu servidor de IA está en ejecución y accesible desde la aplicación.';
+        } else {
+            description = error.message;
+        }
         toast({
             title: 'Error al Obtener Checkpoint',
-            description: error.message,
+            description,
             variant: 'destructive',
         });
     } finally {

@@ -11,7 +11,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const GetLocalConfigInputSchema = z.object({
-  apiEndpoint: z.string().url().describe('The base URL of the local Stable Diffusion API (without /sdapi/v1/...).'),
+  apiEndpoint: z.string().url().describe('The URL of the local Stable Diffusion API endpoint (e.g., http://.../sdapi/v1/txt2img).'),
 });
 export type GetLocalConfigInput = z.infer<typeof GetLocalConfigInputSchema>;
 
@@ -31,9 +31,9 @@ const getLocalConfigFlow = ai.defineFlow(
     outputSchema: GetLocalConfigOutputSchema,
   },
   async (input) => {
-    // The options endpoint is usually at the root of the API path
-    const optionsUrl = new URL(input.apiEndpoint);
-    optionsUrl.pathname = '/sdapi/v1/options';
+    // Construct the options URL from the provided API endpoint
+    const baseUrl = new URL(input.apiEndpoint);
+    const optionsUrl = new URL('/sdapi/v1/options', baseUrl.origin);
     
     const response = await fetch(optionsUrl.toString(), {
       method: 'GET',
