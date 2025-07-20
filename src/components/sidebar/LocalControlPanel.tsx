@@ -40,7 +40,7 @@ export default function LocalControlPanel() {
         console.error('Failed to fetch checkpoint:', error);
         let description = 'Ha ocurrido un error desconocido.';
         if (error.message?.includes('fetch failed')) {
-          description = 'No se pudo conectar con la API local. Asegúrate de que tu servidor de IA está en ejecución y accesible desde la aplicación.';
+          description = 'No se pudo conectar con la API local. Asegúrate de que el servidor esté en ejecución y que la dirección IP sea correcta. Si usas localhost (127.0.0.1), prueba con la IP de tu red local (ej. 192.168.1.X).';
         } else {
             description = error.message;
         }
@@ -96,7 +96,7 @@ export default function LocalControlPanel() {
       console.error('Local generation failed:', error);
       let description = 'Ha ocurrido un error desconocido.';
       if (error.message?.includes('fetch failed')) {
-          description = 'No se pudo conectar con la API local. Asegúrate de que tu servidor de IA (ej. Stable Diffusion) está en ejecución y que no hay un cortafuegos bloqueando la conexión.';
+          description = 'No se pudo conectar con la API local. Asegúrate de que el servidor esté en ejecución y que la dirección IP sea correcta. Si usas localhost (127.0.0.1), prueba con la IP de tu red local (ej. 192.168.1.X).';
       } else {
           description = error.message;
       }
@@ -118,7 +118,7 @@ export default function LocalControlPanel() {
             Controles de Generación Local
           </CardTitle>
           <CardDescription>
-            Utiliza tus propios modelos de IA (ej. Stable Diffusion) para generar imágenes directamente.
+            Utiliza tus propios modelos de IA (ej. Stable Diffusion) para generar imágenes directamente desde tu red.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -186,7 +186,7 @@ export default function LocalControlPanel() {
               />
             </div>
              <div className="space-y-3">
-              <Label>Escala de CFG: <span className="text-primary font-mono">{cfgScale}</span></Label>
+              <Label>Escala de CFG: <span className="text-primary font-mono">{cfgScale[0]}</span></Label>
               <Slider
                 min={1}
                 max={20}
