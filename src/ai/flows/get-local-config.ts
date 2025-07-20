@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A flow for fetching the current configuration from a local Stable Diffusion API.
