@@ -5,15 +5,16 @@ import { SidebarProvider, Sidebar, SidebarInset, SidebarContent, SidebarMenu, Si
 import Header from '@/components/layout/Header';
 import GeminiControlPanel from '@/components/sidebar/GeminiControlPanel';
 import LocalControlPanel from '@/components/sidebar/LocalControlPanel';
+import PromptGeneratorPanel from '@/components/sidebar/PromptGeneratorPanel';
 import ImageHistory from '@/components/gallery/ImageHistory';
 import ImageInspector from '@/components/gallery/ImageInspector';
 import type { AIImage } from '@/lib/db';
 import { db } from '@/lib/db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { AppContext } from '@/context/AppContext';
-import { Sparkles, Server, History } from 'lucide-react';
+import { Sparkles, Server, History, FileText } from 'lucide-react';
 
-type View = 'gemini' | 'local' | 'history';
+type View = 'gemini' | 'local' | 'prompt-generator' | 'history';
 
 function AppSidebar({ activeView, setActiveView, imageCount }: { activeView: View, setActiveView: (view: View) => void, imageCount?: number }) {
   return (
@@ -37,6 +38,16 @@ function AppSidebar({ activeView, setActiveView, imageCount }: { activeView: Vie
           >
             <Server />
             <span>Local</span>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+         <SidebarMenuItem>
+          <SidebarMenuButton 
+            isActive={activeView === 'prompt-generator'} 
+            onClick={() => setActiveView('prompt-generator')}
+            tooltip="Generar desde Documento"
+          >
+            <FileText />
+            <span>Desde Doc.</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
         <SidebarMenuItem>
@@ -86,6 +97,7 @@ export default function Home() {
             <main className="flex-1 overflow-y-auto">
               {activeView === 'gemini' && <GeminiControlPanel />}
               {activeView === 'local' && <LocalControlPanel />}
+              {activeView === 'prompt-generator' && <PromptGeneratorPanel />}
               {activeView === 'history' && <ImageHistory />}
             </main>
           </div>
