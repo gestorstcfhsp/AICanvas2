@@ -63,13 +63,13 @@ const generateImageLocalFlow = ai.defineFlow(
 
     if (!response.ok) {
       const errorBody = await response.text();
-      throw new Error(`Local API request failed with status ${response.status}: ${errorBody}`);
+      throw new Error(`Error de la API local (${response.status}): ${errorBody}`);
     }
 
     const result = await response.json();
     
     if (!result.images || result.images.length === 0) {
-      throw new Error('Local API did not return any images.');
+      throw new Error('La API local no devolvió ninguna imagen.');
     }
 
     const b64Image = result.images[0];
