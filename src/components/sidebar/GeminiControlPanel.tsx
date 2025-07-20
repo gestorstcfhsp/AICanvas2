@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -25,6 +25,7 @@ export type BatchResult = {
   newImage?: AIImage;
 };
 
+const BATCH_RESULTS_STORAGE_KEY = 'batchGenerationResults';
 
 export default function GeminiControlPanel() {
   const { toast } = useToast();
@@ -36,6 +37,36 @@ export default function GeminiControlPanel() {
   const [refineBatch, setRefineBatch] = useState(true);
   const [progress, setProgress] = useState(0);
   const [batchResults, setBatchResults] = useState<BatchResult[]>([]);
+
+  useEffect(() => {
+    try {
+      const storedResults = localStorage.getItem(BATCH_RESULTS_STORAGE_KEY);
+      if (storedResults) {
+        const parsedResults: BatchResult[] = JSON.parse(storedResults);
+        // Reset pending states on load, as they were interrupted
+        const restoredResults = parsedResults.map(r => 
+            r.status === 'pending' ? { ...r, status: 'failed' as const, error: 'Proceso interrumpido' } : r
+        );
+        setBatchResults(restoredResults);
+      }
+    } catch (error) {
+      console.error("Failed to load batch results from localStorage", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      if (batchResults.length > 0) {
+        const resultsToStore = batchResults.map(({ newImage, ...rest }) => rest);
+        localStorage.setItem(BATCH_RESULTS_STORAGE_KEY, JSON.stringify(resultsToStore));
+      } else {
+        localStorage.removeItem(BATCH_RESULTS_STORAGE_KEY);
+      }
+    } catch (error) {
+      console.error("Failed to save batch results to localStorage", error);
+    }
+  }, [batchResults]);
+
 
   const handleRefinePrompt = async () => {
     if (!promptText.trim()) {
@@ -217,7 +248,9 @@ export default function GeminiControlPanel() {
                 <div className="relative">
                     <Textarea
                     id="batch-prompts"
-                    placeholder="Un gato astronauta en la luna&#10;Un bosque encantado con setas brillantes&#10;Una ciudad submarina..."
+                    placeholder="Un gato astronauta en la luna
+Un bosque encantado con setas brillantes
+Una ciudad submarina..."
                     value={batchPrompts}
                     onChange={(e) => setBatchPrompts(e.target.value)}
                     rows={8}
