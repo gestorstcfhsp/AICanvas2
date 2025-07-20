@@ -6,3 +6,4 @@ import '@/ai/flows/generate-image.ts';
 import '@/ai/flows/translate-text.ts';
 import '@/ai/flows/prompts-from-doc.ts';
 import '@/ai/flows/generate-image-local.ts';
+import '@/ai/flows/get-local-config.ts';

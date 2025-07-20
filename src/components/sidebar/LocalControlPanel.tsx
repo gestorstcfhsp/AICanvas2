@@ -8,9 +8,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
-import { Server, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { Server, Image as ImageIcon, Loader2, DownloadCloud } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { generateImageLocal } from '@/ai/flows/generate-image-local';
+import { getLocalConfig } from '@/ai/flows/get-local-config';
 import { db, type AIImage } from '@/lib/db';
 import { dataUrlToBlob, getImageMetadata } from '@/lib/utils';
 
@@ -24,6 +25,28 @@ export default function LocalControlPanel() {
   const [steps, setSteps] = useState([25]);
   const [cfgScale, setCfgScale] = useState([7]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetchingCheckpoint, setIsFetchingCheckpoint] = useState(false);
+
+  const handleFetchCheckpoint = async () => {
+    setIsFetchingCheckpoint(true);
+    try {
+        const result = await getLocalConfig({ apiEndpoint });
+        setCheckpointModel(result.checkpointModel);
+        toast({
+            title: 'Checkpoint Obtenido',
+            description: `Modelo base actual: ${result.checkpointModel}`
+        });
+    } catch (error: any) {
+        console.error('Failed to fetch checkpoint:', error);
+        toast({
+            title: 'Error al Obtener Checkpoint',
+            description: error.message,
+            variant: 'destructive',
+        });
+    } finally {
+        setIsFetchingCheckpoint(false);
+    }
+  };
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
@@ -78,6 +101,7 @@ export default function LocalControlPanel() {
   };
   
   const canGenerate = prompt.trim() !== '' && !isLoading;
+  const anyLoading = isLoading || isFetchingCheckpoint;
 
   return (
     <div className="flex h-full items-center justify-center p-4 md:p-6">
@@ -93,24 +117,30 @@ export default function LocalControlPanel() {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="api-endpoint">Endpoint de la API Local</Label>
+            <Label htmlFor="api-endpoint">Endpoint de la API Local (txt2img)</Label>
             <Input
               id="api-endpoint"
               value={apiEndpoint}
               onChange={(e) => setApiEndpoint(e.target.value)}
               placeholder="http://127.0.0.1:7860/sdapi/v1/txt2img"
-              disabled={isLoading}
+              disabled={anyLoading}
             />
           </div>
            <div className="space-y-2">
             <Label htmlFor="checkpoint-model">Modelo de Checkpoint (Opcional)</Label>
-            <Input
-              id="checkpoint-model"
-              value={checkpointModel}
-              onChange={(e) => setCheckpointModel(e.target.value)}
-              placeholder="v1-5-pruned-emaonly.ckpt"
-              disabled={isLoading}
-            />
+            <div className="flex items-center gap-2">
+                <Input
+                id="checkpoint-model"
+                value={checkpointModel}
+                onChange={(e) => setCheckpointModel(e.target.value)}
+                placeholder="Dejar en blanco para usar el modelo base o autocompletar..."
+                disabled={anyLoading}
+                />
+                <Button variant="outline" size="icon" onClick={handleFetchCheckpoint} disabled={anyLoading}>
+                    {isFetchingCheckpoint ? <Loader2 className="h-4 w-4 animate-spin" /> : <DownloadCloud className="h-4 w-4" />}
+                    <span className="sr-only">Obtener Checkpoint</span>
+                </Button>
+            </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -121,7 +151,7 @@ export default function LocalControlPanel() {
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="Un castillo en las nubes, arte digital detallado..."
                 rows={5}
-                disabled={isLoading}
+                disabled={anyLoading}
                 />
             </div>
             <div className="space-y-2">
@@ -132,7 +162,7 @@ export default function LocalControlPanel() {
                 onChange={(e) => setNegativePrompt(e.target.value)}
                 placeholder="Mala calidad, borroso, texto, marca de agua..."
                 rows={5}
-                disabled={isLoading}
+                disabled={anyLoading}
                 />
             </div>
           </div>
@@ -146,7 +176,7 @@ export default function LocalControlPanel() {
                 step={1}
                 value={steps}
                 onValueChange={setSteps}
-                disabled={isLoading}
+                disabled={anyLoading}
               />
             </div>
              <div className="space-y-3">
@@ -157,7 +187,7 @@ export default function LocalControlPanel() {
                 step={0.5}
                 value={cfgScale}
                 onValueChange={setCfgScale}
-                disabled={isLoading}
+                disabled={anyLoading}
               />
             </div>
           </div>
