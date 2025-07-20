@@ -192,7 +192,7 @@ export default function LocalControlPanel() {
                 max={20}
                 step={0.5}
                 value={cfgScale}
-                onValueeChange={setCfgScale}
+                onValueChange={setCfgScale}
                 disabled={anyLoading}
               />
             </div>
