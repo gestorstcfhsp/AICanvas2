@@ -160,7 +160,7 @@ export default function GeminiControlPanel() {
     setIsGenerating(true);
     try {
       let imageUrl: string | null = null;
-      let refinedPromptUsed = ''; // We can fill this if we refine the prompt before generation
+      let refinedPromptUsed = ''; 
 
       if (imageModel === 'Gemini Flash') {
         const result = await generateImageWithGemini({ prompt: promptText });
@@ -170,7 +170,6 @@ export default function GeminiControlPanel() {
       }
 
       if (!imageUrl) {
-        // Error toast is handled inside the specific generation function
         setIsGenerating(false);
         return;
       }
