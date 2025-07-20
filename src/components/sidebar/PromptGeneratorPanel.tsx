@@ -8,8 +8,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { generatePromptsFromDocument } from '@/ai/flows/prompts-from-doc';
-import { Upload, FileText, Copy, Loader2, Check, Sparkles, ClipboardCopy } from 'lucide-react';
+import { Upload, FileText, Copy, Loader2, Check, Sparkles, ClipboardCopy, ClipboardPaste } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from '@/components/ui/textarea';
 
 interface PromptGeneratorPanelProps {
   generatedPrompts: string[];
@@ -20,7 +22,9 @@ export default function PromptGeneratorPanel({ generatedPrompts, setGeneratedPro
   const { toast } = useToast();
   const [file, setFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState('');
+  const [pastedText, setPastedText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('file');
   const [copiedPromptIndex, setCopiedPromptIndex] = useState<number | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -45,20 +49,34 @@ export default function PromptGeneratorPanel({ generatedPrompts, setGeneratedPro
   };
 
   const handleGenerate = async () => {
-    if (!file) {
-      toast({
-        title: 'No se ha seleccionado ningún archivo',
-        description: 'Por favor, sube un documento para generar prompts.',
-        variant: 'destructive',
-      });
-      return;
-    }
+    let documentContent = '';
 
+    if (activeTab === 'paste') {
+        documentContent = pastedText;
+        if (!documentContent.trim()) {
+            toast({
+                title: 'No hay texto para procesar',
+                description: 'Por favor, pega algún contenido en el área de texto.',
+                variant: 'destructive',
+            });
+            return;
+        }
+    } else {
+        if (!file) {
+            toast({
+                title: 'No se ha seleccionado ningún archivo',
+                description: 'Por favor, sube un documento para generar prompts.',
+                variant: 'destructive',
+            });
+            return;
+        }
+        documentContent = await file.text();
+    }
+    
     setIsLoading(true);
     setGeneratedPrompts([]);
 
     try {
-      const documentContent = await file.text();
       const result = await generatePromptsFromDocument({ documentContent });
       setGeneratedPrompts(result.prompts);
       toast({
@@ -96,6 +114,8 @@ export default function PromptGeneratorPanel({ generatedPrompts, setGeneratedPro
     });
   }
 
+  const canGenerate = (activeTab === 'file' && !!file) || (activeTab === 'paste' && !!pastedText.trim());
+
   return (
     <div className="flex h-full items-center justify-center p-4 md:p-6">
       <Card className="w-full max-w-2xl">
@@ -104,27 +124,35 @@ export default function PromptGeneratorPanel({ generatedPrompts, setGeneratedPro
             <FileText />
             Generador de Prompts desde Documento
           </CardTitle>
-          <CardDescription>Sube un archivo .txt o .md para que la IA genere prompts para imágenes basados en su contenido.</CardDescription>
+          <CardDescription>Extrae la esencia de un documento para crear prompts de imágenes con la ayuda de la IA.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="file-upload">Subir Documento</Label>
-            <div className="flex items-center gap-2">
-              <Input id="file-upload" type="file" accept=".txt,.md" onChange={handleFileChange} className="hidden" />
-              <Label htmlFor="file-upload" className="flex-1">
-                <Button asChild variant="outline" className="w-full cursor-pointer">
-                  <div>
-                    <Upload className="mr-2" />
-                    <span>{fileName || 'Seleccionar archivo...'}</span>
-                  </div>
-                </Button>
-              </Label>
-              <Button onClick={handleGenerate} disabled={!file || isLoading}>
-                {isLoading ? <Loader2 className="mr-2 animate-spin" /> : <Sparkles className="mr-2" />}
-                {isLoading ? 'Generando...' : 'Generar'}
-              </Button>
-            </div>
-          </div>
+          <Tabs defaultValue="file" onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="file" disabled={isLoading}><Upload className="mr-2"/>Subir Archivo</TabsTrigger>
+              <TabsTrigger value="paste" disabled={isLoading}><ClipboardPaste className="mr-2"/>Pegar Texto</TabsTrigger>
+            </TabsList>
+            <TabsContent value="file" className="space-y-4 pt-4">
+              <Label htmlFor="file-upload">Subir Documento (.txt, .md)</Label>
+               <Input id="file-upload" type="file" accept=".txt,.md" onChange={handleFileChange} disabled={isLoading}/>
+            </TabsContent>
+            <TabsContent value="paste" className="space-y-4 pt-4">
+               <Label htmlFor="paste-area">Contenido del Documento</Label>
+               <Textarea
+                    id="paste-area"
+                    placeholder="Pega aquí el contenido de tu documento..."
+                    value={pastedText}
+                    onChange={(e) => setPastedText(e.target.value)}
+                    rows={8}
+                    disabled={isLoading}
+                />
+            </TabsContent>
+          </Tabs>
+
+          <Button onClick={handleGenerate} disabled={!canGenerate || isLoading} className="w-full !mt-6">
+            {isLoading ? <Loader2 className="mr-2 animate-spin" /> : <Sparkles className="mr-2" />}
+            {isLoading ? 'Generando...' : 'Generar Prompts'}
+          </Button>
           
           {generatedPrompts.length > 0 && (
             <div className="space-y-4">
@@ -135,7 +163,7 @@ export default function PromptGeneratorPanel({ generatedPrompts, setGeneratedPro
                         Copiar Todos
                     </Button>
                 </div>
-                <ScrollArea className="h-72 w-full rounded-md border p-2">
+                <ScrollArea className="h-60 w-full rounded-md border p-2">
                     <div className="space-y-2 p-2">
                     {generatedPrompts.map((prompt, index) => (
                         <div key={index} className="flex items-center justify-between gap-2 rounded-md bg-muted/50 p-3">
