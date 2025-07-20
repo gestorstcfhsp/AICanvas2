@@ -10,6 +10,12 @@ import { generatePromptsFromDocument } from '@/ai/flows/prompts-from-doc';
 import { Upload, FileText, Copy, Loader2, Check, Sparkles, ClipboardCopy, Trash2, X } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
+import * as pdfjs from 'pdfjs-dist';
+
+// Set worker source
+if (typeof window !== 'undefined') {
+  pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+}
 
 interface PromptGeneratorPanelProps {
   generatedPrompts: string[];
@@ -28,23 +34,38 @@ export default function PromptGeneratorPanel({ generatedPrompts, setGeneratedPro
     if (selectedFile) {
       const isTxt = selectedFile.name.toLowerCase().endsWith('.txt');
       const isMd = selectedFile.name.toLowerCase().endsWith('.md');
+      const isPdf = selectedFile.name.toLowerCase().endsWith('.pdf');
       
-      if (isTxt || isMd) {
-        try {
-          const text = await selectedFile.text();
-          setDocumentContent(text);
-          setGeneratedPrompts([]);
-        } catch (error) {
-           toast({
-            title: 'Error al leer el archivo',
-            description: 'No se pudo leer el contenido del archivo seleccionado.',
-            variant: 'destructive',
-          });
+      try {
+        let text = '';
+        if (isTxt || isMd) {
+          text = await selectedFile.text();
+        } else if (isPdf) {
+            const arrayBuffer = await selectedFile.arrayBuffer();
+            const pdf = await pdfjs.getDocument(arrayBuffer).promise;
+            const numPages = pdf.numPages;
+            const textContent = [];
+            for (let i = 1; i <= numPages; i++) {
+                const page = await pdf.getPage(i);
+                const content = await page.getTextContent();
+                textContent.push(content.items.map((item: any) => item.str).join(' '));
+            }
+            text = textContent.join('\n');
+        } else {
+             toast({
+                title: 'Formato de archivo no soportado',
+                description: 'Por favor, sube un archivo .txt, .md o .pdf.',
+                variant: 'destructive',
+            });
+            return;
         }
-      } else {
-        toast({
-          title: 'Formato de archivo no soportado',
-          description: 'Por favor, sube un archivo .txt o .md.',
+
+        setDocumentContent(text);
+        setGeneratedPrompts([]);
+      } catch (error) {
+         toast({
+          title: 'Error al leer el archivo',
+          description: 'No se pudo leer el contenido del archivo seleccionado.',
           variant: 'destructive',
         });
       }
@@ -133,9 +154,9 @@ export default function PromptGeneratorPanel({ generatedPrompts, setGeneratedPro
                     <Label htmlFor="paste-area">Contenido del Documento</Label>
                     <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={isLoading}>
                         <Upload className="mr-2 h-4 w-4" />
-                        Subir Archivo (.txt, .md)
+                        Subir Archivo (.txt, .md, .pdf)
                     </Button>
-                    <input ref={fileInputRef} type="file" accept=".txt,.md" onChange={handleFileChange} className="hidden" />
+                    <input ref={fileInputRef} type="file" accept=".txt,.md,.pdf" onChange={handleFileChange} className="hidden" />
                 </div>
                <div className="relative">
                     <Textarea
