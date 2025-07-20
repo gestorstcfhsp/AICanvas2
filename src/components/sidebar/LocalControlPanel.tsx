@@ -11,13 +11,14 @@ import { Slider } from '@/components/ui/slider';
 import { Server, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { generateImageLocal } from '@/ai/flows/generate-image-local';
-import { db } from '@/lib/db';
+import { db, type AIImage } from '@/lib/db';
 import { dataUrlToBlob, getImageMetadata } from '@/lib/utils';
 
 
 export default function LocalControlPanel() {
   const { toast } = useToast();
   const [apiEndpoint, setApiEndpoint] = useState('http://127.0.0.1:7860/sdapi/v1/txt2img');
+  const [checkpointModel, setCheckpointModel] = useState('');
   const [prompt, setPrompt] = useState('');
   const [negativePrompt, setNegativePrompt] = useState('');
   const [steps, setSteps] = useState([25]);
@@ -35,6 +36,7 @@ export default function LocalControlPanel() {
     try {
       const result = await generateImageLocal({
         apiEndpoint,
+        checkpointModel,
         prompt,
         negativePrompt,
         steps: steps[0],
@@ -44,10 +46,10 @@ export default function LocalControlPanel() {
       const blob = await dataUrlToBlob(result.imageUrl);
       const metadata = await getImageMetadata(result.imageUrl);
 
-      const newImage = {
+      const newImage: Omit<AIImage, 'id'> = {
         name: prompt.substring(0, 50) + '...',
         prompt: prompt,
-        refinedPrompt: '', // Not applicable for local generation
+        refinedPrompt: '',
         model: 'Stable Diffusion',
         resolution: { width: metadata.width, height: metadata.height },
         size: blob.size,
@@ -55,9 +57,10 @@ export default function LocalControlPanel() {
         tags: [],
         blob,
         createdAt: new Date(),
+        checkpointModel,
       };
       
-      await db.images.add(newImage);
+      await db.images.add(newImage as AIImage);
       toast({ title: '¡Imagen Local Generada!', description: 'Tu nueva imagen ha sido guardada en el historial.' });
 
     } catch (error: any) {
@@ -96,6 +99,16 @@ export default function LocalControlPanel() {
               value={apiEndpoint}
               onChange={(e) => setApiEndpoint(e.target.value)}
               placeholder="http://127.0.0.1:7860/sdapi/v1/txt2img"
+              disabled={isLoading}
+            />
+          </div>
+           <div className="space-y-2">
+            <Label htmlFor="checkpoint-model">Modelo de Checkpoint (Opcional)</Label>
+            <Input
+              id="checkpoint-model"
+              value={checkpointModel}
+              onChange={(e) => setCheckpointModel(e.target.value)}
+              placeholder="v1-5-pruned-emaonly.ckpt"
               disabled={isLoading}
             />
           </div>

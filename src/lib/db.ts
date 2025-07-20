@@ -1,3 +1,4 @@
+
 import Dexie, { type Table } from 'dexie';
 
 export interface AIImage {
@@ -7,6 +8,7 @@ export interface AIImage {
   refinedPrompt: string;
   translation?: string;
   model: 'Gemini Flash' | 'Stable Diffusion' | string;
+  checkpointModel?: string; // For Stable Diffusion
   resolution: { width: number; height: number };
   size: number; // in bytes
   isFavorite: 0 | 1; // Use number for index
@@ -21,8 +23,8 @@ export class AiCanvasDB extends Dexie {
 
   constructor() {
     super('AiCanvasDatabase');
-    this.version(3).stores({
-      images: '++id, name, prompt, isFavorite, *tags, createdAt'
+    this.version(4).stores({
+      images: '++id, name, prompt, isFavorite, *tags, createdAt, checkpointModel'
     });
   }
 }

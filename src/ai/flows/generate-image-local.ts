@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A flow for generating images using a local Stable Diffusion instance.
@@ -12,6 +13,7 @@ import { z } from 'genkit';
 
 const GenerateImageLocalInputSchema = z.object({
   apiEndpoint: z.string().url().describe('The URL of the local Stable Diffusion API endpoint.'),
+  checkpointModel: z.string().optional().describe('The checkpoint model to use.'),
   prompt: z.string().describe('The prompt for the image.'),
   negativePrompt: z.string().describe('The negative prompt for the image.'),
   steps: z.number().describe('The number of sampling steps.'),
@@ -35,20 +37,28 @@ const generateImageLocalFlow = ai.defineFlow(
     outputSchema: GenerateImageLocalOutputSchema,
   },
   async (input) => {
+    const payload: any = {
+      prompt: input.prompt,
+      negative_prompt: input.negativePrompt,
+      steps: input.steps,
+      cfg_scale: input.cfgScale,
+      width: 512,
+      height: 512,
+    };
+
+    if (input.checkpointModel) {
+        payload.override_settings = {
+            sd_model_checkpoint: input.checkpointModel
+        };
+    }
+
     const response = await fetch(input.apiEndpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-      body: JSON.stringify({
-        prompt: input.prompt,
-        negative_prompt: input.negativePrompt,
-        steps: input.steps,
-        cfg_scale: input.cfgScale,
-        width: 512,
-        height: 512,
-      }),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {

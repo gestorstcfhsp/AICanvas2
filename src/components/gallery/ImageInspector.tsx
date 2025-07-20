@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -46,14 +47,14 @@ export default function ImageInspector({ image, open, onOpenChange }: ImageInspe
         }
       }
     };
-    if (open) {
+    if (open && image.model !== 'Stable Diffusion') { // Only translate for non-local models
       translateAndSave();
     }
   }, [image, open]);
 
   if (!image) return null;
   
-  const stillTranslating = isTranslating || !image.translation;
+  const stillTranslating = isTranslating || (image.model !== 'Stable Diffusion' && !image.translation);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -91,22 +92,25 @@ export default function ImageInspector({ image, open, onOpenChange }: ImageInspe
                           <p className="rounded-md bg-muted/50 p-3 text-muted-foreground">{image.refinedPrompt}</p>
                       </div>
                     )}
-                     <div>
-                        <h4 className="font-headline text-base font-medium mb-2">Descripción (Traducción)</h4>
-                        {stillTranslating ? (
-                            <div className="space-y-2 rounded-md bg-muted/50 p-3">
-                                <p className="text-muted-foreground italic text-xs">Traduciendo descripción...</p>
-                                <Skeleton className="h-4 w-full" />
-                                <Skeleton className="h-4 w-2/3" />
-                            </div>
-                        ) : (
-                            <p className="rounded-md bg-muted/50 p-3 text-muted-foreground">{image.translation}</p>
-                        )}
-                    </div>
+                     {image.model !== 'Stable Diffusion' && (
+                        <div>
+                            <h4 className="font-headline text-base font-medium mb-2">Descripción (Traducción)</h4>
+                            {stillTranslating ? (
+                                <div className="space-y-2 rounded-md bg-muted/50 p-3">
+                                    <p className="text-muted-foreground italic text-xs">Traduciendo descripción...</p>
+                                    <Skeleton className="h-4 w-full" />
+                                    <Skeleton className="h-4 w-2/3" />
+                                </div>
+                            ) : (
+                                <p className="rounded-md bg-muted/50 p-3 text-muted-foreground">{image.translation}</p>
+                            )}
+                        </div>
+                     )}
                     <div>
                         <h4 className="font-headline text-base font-medium mb-2">Metadatos</h4>
                         <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                             <span className="text-muted-foreground">Modelo</span><span className="font-mono text-right">{image.model}</span>
+                            {image.checkpointModel && (<><span className="text-muted-foreground">Checkpoint</span><span className="font-mono text-right truncate">{image.checkpointModel}</span></>)}
                             <span className="text-muted-foreground">Resolución</span><span className="font-mono text-right">{image.resolution.width}x{image.resolution.height}</span>
                             <span className="text-muted-foreground">Tamaño</span><span className="font-mono text-right">{formatBytes(image.size)}</span>
                         </div>
