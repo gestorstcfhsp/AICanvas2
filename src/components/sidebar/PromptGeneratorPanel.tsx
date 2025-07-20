@@ -46,6 +46,17 @@ export default function PromptGeneratorPanel({ generatedPrompts, setGeneratedPro
     }
   };
 
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    // Clear the other input to avoid confusion
+    if (tab === 'file') {
+      setPastedText('');
+    } else {
+      setFile(null);
+    }
+    setGeneratedPrompts([]);
+  };
+
   const handleGenerate = async () => {
     let documentContent = '';
 
@@ -133,7 +144,7 @@ export default function PromptGeneratorPanel({ generatedPrompts, setGeneratedPro
           <CardDescription>Extrae la esencia de un documento para crear prompts de imágenes con la ayuda de la IA.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <Tabs defaultValue="file" onValueChange={setActiveTab} className="w-full">
+          <Tabs defaultValue="file" onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="file" disabled={isLoading}><Upload className="mr-2"/>Subir Archivo</TabsTrigger>
               <TabsTrigger value="paste" disabled={isLoading}><ClipboardPaste className="mr-2"/>Pegar Texto</TabsTrigger>
