@@ -32,7 +32,7 @@ const prompt = ai.definePrompt({
   output: {schema: GeneratePromptsOutputSchema},
   prompt: `You are an expert in visual conceptualization and an AI assistant specialized in creating image generation prompts.
 
-Your task is to analyze the following document content and generate a list of 5 to 10 descriptive, specific, and creative image prompts that capture the key themes, scenes, characters, and emotions of the text. Each prompt should be a single, detailed sentence suitable for a text-to-image AI model.
+Your task is to analyze the following document content and generate a list of descriptive, specific, and creative image prompts that capture the key themes, scenes, characters, and emotions of the text. Each prompt should be a single, detailed sentence suitable for a text-to-image AI model.
 
 Focus on creating prompts that are visually rich and evocative.
 
