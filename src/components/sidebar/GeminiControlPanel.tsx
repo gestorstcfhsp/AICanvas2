@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Wand2, Image as ImageIcon, Loader2, Bot, Layers, RefreshCw, X } from 'lucide-react';
+import { Wand2, Image as ImageIcon, Loader2, Bot, Layers, RefreshCw, X, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { refinePrompt } from '@/ai/flows/refine-prompt';
 import { generateImage } from '@/ai/flows/generate-image';
@@ -187,8 +187,11 @@ export default function GeminiControlPanel() {
 
   const retryFailedPrompts = () => {
     const failedPrompts = batchResults.filter(r => r.status === 'failed').map(r => r.prompt);
-    // Always refine on retry
     handleBatchGenerate(failedPrompts, true);
+  }
+
+  const handleClearBatchResults = () => {
+    setBatchResults([]);
   }
   
   const isLoading = isGenerating || isRefining || isBatchGenerating;
@@ -290,12 +293,18 @@ Una ciudad submarina..."
                   <Separator />
                   <div className="flex justify-between items-center">
                     <h3 className="font-headline text-lg">Resultados del Lote</h3>
-                    {failedPromptsCount > 0 && !isBatchGenerating && (
-                      <Button variant="outline" size="sm" onClick={retryFailedPrompts} disabled={isLoading}>
-                        <RefreshCw className="mr-2 h-4 w-4" />
-                        Reintentar {failedPromptsCount} Fallidos
-                      </Button>
-                    )}
+                     <div className="flex items-center gap-2">
+                        {failedPromptsCount > 0 && !isBatchGenerating && (
+                        <Button variant="outline" size="sm" onClick={retryFailedPrompts} disabled={isLoading}>
+                            <RefreshCw className="mr-2 h-4 w-4" />
+                            Reintentar {failedPromptsCount}
+                        </Button>
+                        )}
+                        <Button variant="ghost" size="icon" onClick={handleClearBatchResults} disabled={isLoading} className="h-8 w-8">
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Limpiar resultados del lote</span>
+                        </Button>
+                    </div>
                   </div>
                   <div className="max-h-60 space-y-2 overflow-y-auto rounded-md border p-2">
                     {batchResults.map((result, index) => (
