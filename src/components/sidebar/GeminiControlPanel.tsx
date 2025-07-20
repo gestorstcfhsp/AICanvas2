@@ -29,8 +29,8 @@ const BATCH_RESULTS_STORAGE_KEY = 'batchGenerationResults';
 
 function getFriendlyErrorMessage(error: any): string {
     const errorMessage = error.message || 'Error desconocido';
-    if (errorMessage.includes('429 Too Many Requests')) {
-        return 'Límite de cuota excedido. Has alcanzado el límite de generación de imágenes por hoy. Inténtalo de nuevo más tarde.';
+    if (errorMessage.includes('429')) {
+        return 'La generación falló debido a la alta demanda (límite de frecuencia excedido). Por favor, espera un momento y vuelve a intentarlo.';
     }
     return errorMessage;
 }
