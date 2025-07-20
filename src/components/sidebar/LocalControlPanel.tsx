@@ -62,7 +62,13 @@ export default function LocalControlPanel() {
 
     } catch (error: any) {
       console.error('Local generation failed:', error);
-      toast({ title: 'Error en Generación Local', description: error.message, variant: 'destructive' });
+      let description = 'Ha ocurrido un error desconocido.';
+      if (error.message?.includes('fetch failed')) {
+          description = 'No se pudo conectar con la API local. Asegúrate de que tu servidor de IA (ej. Stable Diffusion) está en ejecución y que no hay un cortafuegos bloqueando la conexión.';
+      } else {
+          description = error.message;
+      }
+      toast({ title: 'Error en Generación Local', description, variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
