@@ -9,7 +9,6 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {generate} from 'genkit/generate';
 import {z} from 'genkit';
 
 const RefinePromptInputSchema = z.object({
@@ -33,7 +32,7 @@ const refinePromptFlow = ai.defineFlow(
     outputSchema: RefinePromptOutputSchema,
   },
   async ({promptText}) => {
-    const {output} = await generate({
+    const {output} = await ai.generate({
       model: 'googleai/gemini-2.0-flash',
       prompt: `You are an AI expert in refining prompts for image generation. Your goal is to take the user's prompt and make it more specific, descriptive, and creative, so that it can generate a better image.
 
