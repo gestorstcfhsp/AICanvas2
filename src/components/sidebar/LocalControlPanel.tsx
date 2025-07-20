@@ -8,25 +8,67 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
-import { Server, Image as ImageIcon } from 'lucide-react';
+import { Server, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { generateImageLocal } from '@/ai/flows/generate-image-local';
+import { db } from '@/lib/db';
+import { dataUrlToBlob, getImageMetadata } from '@/lib/utils';
+
 
 export default function LocalControlPanel() {
+  const { toast } = useToast();
   const [apiEndpoint, setApiEndpoint] = useState('http://127.0.0.1:7860/sdapi/v1/txt2img');
   const [prompt, setPrompt] = useState('');
   const [negativePrompt, setNegativePrompt] = useState('');
   const [steps, setSteps] = useState([25]);
   const [cfgScale, setCfgScale] = useState([7]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleGenerate = () => {
-    // Logic to call the local API will be added here in the future
-    console.log({
-      apiEndpoint,
-      prompt,
-      negativePrompt,
-      steps: steps[0],
-      cfgScale: cfgScale[0],
-    });
+  const handleGenerate = async () => {
+    if (!prompt.trim()) {
+      toast({ title: 'El prompt está vacío', description: 'Por favor, introduce un prompt para generar una imagen.', variant: 'destructive' });
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      const result = await generateImageLocal({
+        apiEndpoint,
+        prompt,
+        negativePrompt,
+        steps: steps[0],
+        cfgScale: cfgScale[0],
+      });
+      
+      const blob = await dataUrlToBlob(result.imageUrl);
+      const metadata = await getImageMetadata(result.imageUrl);
+
+      const newImage = {
+        name: prompt.substring(0, 50) + '...',
+        prompt: prompt,
+        refinedPrompt: '', // Not applicable for local generation
+        model: 'Stable Diffusion',
+        resolution: { width: metadata.width, height: metadata.height },
+        size: blob.size,
+        isFavorite: 0 as const,
+        tags: [],
+        blob,
+        createdAt: new Date(),
+      };
+      
+      await db.images.add(newImage);
+      toast({ title: '¡Imagen Local Generada!', description: 'Tu nueva imagen ha sido guardada en el historial.' });
+
+    } catch (error: any) {
+      console.error('Local generation failed:', error);
+      toast({ title: 'Error en Generación Local', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
+    }
   };
+  
+  const canGenerate = prompt.trim() !== '' && !isLoading;
 
   return (
     <div className="flex h-full items-center justify-center p-4 md:p-6">
@@ -48,6 +90,7 @@ export default function LocalControlPanel() {
               value={apiEndpoint}
               onChange={(e) => setApiEndpoint(e.target.value)}
               placeholder="http://127.0.0.1:7860/sdapi/v1/txt2img"
+              disabled={isLoading}
             />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -59,6 +102,7 @@ export default function LocalControlPanel() {
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="Un castillo en las nubes, arte digital detallado..."
                 rows={5}
+                disabled={isLoading}
                 />
             </div>
             <div className="space-y-2">
@@ -69,6 +113,7 @@ export default function LocalControlPanel() {
                 onChange={(e) => setNegativePrompt(e.target.value)}
                 placeholder="Mala calidad, borroso, texto, marca de agua..."
                 rows={5}
+                disabled={isLoading}
                 />
             </div>
           </div>
@@ -82,6 +127,7 @@ export default function LocalControlPanel() {
                 step={1}
                 value={steps}
                 onValueChange={setSteps}
+                disabled={isLoading}
               />
             </div>
              <div className="space-y-3">
@@ -92,13 +138,14 @@ export default function LocalControlPanel() {
                 step={0.5}
                 value={cfgScale}
                 onValueChange={setCfgScale}
+                disabled={isLoading}
               />
             </div>
           </div>
           
-          <Button onClick={handleGenerate} className="w-full">
-            <ImageIcon className="mr-2" />
-            Generar Imagen
+          <Button onClick={handleGenerate} disabled={!canGenerate} className="w-full">
+            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageIcon className="mr-2 h-4 w-4" />}
+            {isLoading ? 'Generando...' : 'Generar Imagen'}
           </Button>
 
         </CardContent>
