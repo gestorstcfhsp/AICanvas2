@@ -56,8 +56,8 @@ export default function LocalControlPanel() {
     } catch (error: any) {
         console.error('Failed to fetch checkpoint:', error);
         let description = 'Ha ocurrido un error desconocido.';
-        if (error.message?.includes('fetch failed')) {
-          description = 'No se pudo conectar con la API local. Asegúrate de que el servidor esté en ejecución, que la dirección IP sea correcta y que la configuración de CORS sea la adecuada.';
+        if (error.name === 'TypeError' && error.message.includes('fetch failed')) {
+            description = 'No se pudo conectar con la API local. Comprueba que el servidor esté en ejecución y que la dirección IP sea correcta. Si esta página se sirve por HTTPS, el navegador bloqueará las peticiones a un servidor HTTP local (error de contenido mixto).';
         } else {
             description = error.message;
         }
@@ -141,11 +141,11 @@ export default function LocalControlPanel() {
     } catch (error: any) {
       console.error('Local generation failed:', error);
       let description = 'Ha ocurrido un error desconocido.';
-      if (error.message?.includes('fetch failed')) {
-          description = 'No se pudo conectar con la API local. Asegúrate de que el servidor esté en ejecución, que la dirección IP sea correcta y que la configuración de CORS sea la adecuada.';
-      } else {
-          description = error.message;
-      }
+       if (error.name === 'TypeError' && error.message.includes('fetch failed')) {
+            description = 'No se pudo conectar con la API local. Comprueba que el servidor esté en ejecución y que la dirección IP sea correcta. Si esta página se sirve por HTTPS, el navegador bloqueará las peticiones a un servidor HTTP local (error de contenido mixto). Asegúrate de que los CORS están bien configurados.';
+        } else {
+            description = error.message;
+        }
       toast({ title: 'Error en Generación Local', description, variant: 'destructive' });
     } finally {
       setIsLoading(false);
