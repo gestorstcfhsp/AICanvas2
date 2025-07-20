@@ -2,11 +2,12 @@
 
 import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
-import { Search, Info } from 'lucide-react';
+import { Search, Info, X } from 'lucide-react';
 import ImageCard from './ImageCard';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
 import { Skeleton } from '../ui/skeleton';
+import { Button } from '@/components/ui/button';
 
 export default function ImageHistory() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -44,14 +45,25 @@ export default function ImageHistory() {
     <div className="flex h-full flex-col gap-6 p-4 md:p-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <h2 className="font-headline text-2xl font-semibold">{getTitle()}</h2>
-        <div className="relative">
+        <div className="relative w-full max-w-md">
           <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Buscar por nombre o etiqueta..."
-            className="w-full max-w-md pl-10"
+            className="w-full pl-10 pr-10"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
+          {searchTerm && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground"
+              onClick={() => setSearchTerm('')}
+            >
+              <X className="h-5 w-5" />
+              <span className="sr-only">Limpiar búsqueda</span>
+            </Button>
+          )}
         </div>
       </div>
       
