@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { generatePromptsFromDocument } from '@/ai/flows/prompts-from-doc';
-import { Upload, FileText, Copy, Loader2, Check, Sparkles, ClipboardCopy, ClipboardPaste } from 'lucide-react';
+import { Upload, FileText, Copy, Loader2, Check, Sparkles, ClipboardCopy, ClipboardPaste, Trash2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from '@/components/ui/textarea';
@@ -21,7 +21,6 @@ interface PromptGeneratorPanelProps {
 export default function PromptGeneratorPanel({ generatedPrompts, setGeneratedPrompts }: PromptGeneratorPanelProps) {
   const { toast } = useToast();
   const [file, setFile] = useState<File | null>(null);
-  const [fileName, setFileName] = useState('');
   const [pastedText, setPastedText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('file');
@@ -35,7 +34,6 @@ export default function PromptGeneratorPanel({ generatedPrompts, setGeneratedPro
       
       if (isTxt || isMd) {
         setFile(selectedFile);
-        setFileName(selectedFile.name);
         setGeneratedPrompts([]);
       } else {
         toast({
@@ -112,6 +110,14 @@ export default function PromptGeneratorPanel({ generatedPrompts, setGeneratedPro
         title: '¡Todos los Prompts Copiados!',
         description: 'Ya puedes pegarlos en el panel de generación por lotes.',
     });
+  };
+  
+  const handleClearPrompts = () => {
+    setGeneratedPrompts([]);
+    toast({
+        title: 'Lista de Prompts Limpiada',
+        description: 'Puedes generar una nueva lista cuando quieras.',
+    });
   }
 
   const canGenerate = (activeTab === 'file' && !!file) || (activeTab === 'paste' && !!pastedText.trim());
@@ -157,11 +163,17 @@ export default function PromptGeneratorPanel({ generatedPrompts, setGeneratedPro
           {generatedPrompts.length > 0 && (
             <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                    <h3 className="font-headline text-lg">Prompts Sugeridos</h3>
-                    <Button variant="outline" size="sm" onClick={handleCopyAllPrompts}>
-                        <ClipboardCopy className="mr-2 h-4 w-4" />
-                        Copiar Todos
-                    </Button>
+                    <h3 className="font-headline text-lg">Prompts Sugeridos ({generatedPrompts.length})</h3>
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={handleCopyAllPrompts}>
+                            <ClipboardCopy className="mr-2 h-4 w-4" />
+                            Copiar Todos
+                        </Button>
+                         <Button variant="destructive" size="sm" onClick={handleClearPrompts}>
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Limpiar
+                        </Button>
+                    </div>
                 </div>
                 <ScrollArea className="h-60 w-full rounded-md border p-2">
                     <div className="space-y-2 p-2">

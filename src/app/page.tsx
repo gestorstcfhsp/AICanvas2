@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SidebarProvider, Sidebar, SidebarInset, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarMenuBadge } from '@/components/ui/sidebar';
 import Header from '@/components/layout/Header';
 import GeminiControlPanel from '@/components/sidebar/GeminiControlPanel';
@@ -16,6 +16,8 @@ import { AppContext } from '@/context/AppContext';
 import { Sparkles, Server, History, FileText } from 'lucide-react';
 
 type View = 'gemini' | 'local' | 'prompt-generator' | 'history';
+
+const PROMPTS_STORAGE_KEY = 'generatedPrompts';
 
 function AppSidebar({ activeView, setActiveView, imageCount }: { activeView: View, setActiveView: (view: View) => void, imageCount?: number }) {
   return (
@@ -75,6 +77,17 @@ export default function Home() {
   const [activeView, setActiveView] = useState<View>('gemini');
   const [generatedPrompts, setGeneratedPrompts] = useState<string[]>([]);
 
+  useEffect(() => {
+    try {
+      const storedPrompts = localStorage.getItem(PROMPTS_STORAGE_KEY);
+      if (storedPrompts) {
+        setGeneratedPrompts(JSON.parse(storedPrompts));
+      }
+    } catch (error) {
+      console.error("Failed to load prompts from localStorage", error);
+    }
+  }, []);
+
   const inspectedImage = useLiveQuery(() => {
     if (inspectedImageId === null) return undefined;
     return db.images.get(inspectedImageId);
@@ -86,6 +99,19 @@ export default function Home() {
   const setInspectedImage = (image: AIImage | null) => {
     setInspectedImageId(image?.id ?? null);
   };
+  
+  const handleSetGeneratedPrompts = (prompts: string[]) => {
+      setGeneratedPrompts(prompts);
+      try {
+        if (prompts.length > 0) {
+            localStorage.setItem(PROMPTS_STORAGE_KEY, JSON.stringify(prompts));
+        } else {
+            localStorage.removeItem(PROMPTS_STORAGE_KEY);
+        }
+      } catch (error) {
+        console.error("Failed to save prompts to localStorage", error);
+      }
+  }
 
   return (
     <AppContext.Provider value={{ inspectedImage: inspectedImage || null, setInspectedImage }}>
@@ -99,7 +125,7 @@ export default function Home() {
             <main className="flex-1 overflow-y-auto">
               {activeView === 'gemini' && <GeminiControlPanel />}
               {activeView === 'local' && <LocalControlPanel />}
-              {activeView === 'prompt-generator' && <PromptGeneratorPanel generatedPrompts={generatedPrompts} setGeneratedPrompts={setGeneratedPrompts} />}
+              {activeView === 'prompt-generator' && <PromptGeneratorPanel generatedPrompts={generatedPrompts} setGeneratedPrompts={handleSetGeneratedPrompts} />}
               {activeView === 'history' && <ImageHistory />}
             </main>
           </div>
