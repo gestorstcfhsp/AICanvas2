@@ -5,7 +5,6 @@ import React, { useState, useEffect } from 'react';
 import { SidebarProvider, Sidebar, SidebarInset, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarMenuBadge } from '@/components/ui/sidebar';
 import Header from '@/components/layout/Header';
 import GeminiControlPanel from '@/components/sidebar/GeminiControlPanel';
-import LocalControlPanel from '@/components/sidebar/LocalControlPanel';
 import PromptGeneratorPanel from '@/components/sidebar/PromptGeneratorPanel';
 import ImageHistory from '@/components/gallery/ImageHistory';
 import ImageInspector from '@/components/gallery/ImageInspector';
@@ -13,9 +12,9 @@ import type { AIImage } from '@/lib/db';
 import { db } from '@/lib/db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { AppContext } from '@/context/AppContext';
-import { Sparkles, Server, History, FileText } from 'lucide-react';
+import { Sparkles, History, FileText } from 'lucide-react';
 
-type View = 'gemini' | 'local' | 'prompt-generator' | 'history';
+type View = 'gemini' | 'prompt-generator' | 'history';
 
 const PROMPTS_STORAGE_KEY = 'generatedPrompts';
 
@@ -27,20 +26,10 @@ function AppSidebar({ activeView, setActiveView, imageCount }: { activeView: Vie
           <SidebarMenuButton 
             isActive={activeView === 'gemini'} 
             onClick={() => setActiveView('gemini')}
-            tooltip="Generación con Gemini"
+            tooltip="Generación con IA"
           >
             <Sparkles />
-            <span>Gemini</span>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-        <SidebarMenuItem>
-          <SidebarMenuButton 
-            isActive={activeView === 'local'} 
-            onClick={() => setActiveView('local')}
-            tooltip="Generación Local"
-          >
-            <Server />
-            <span>Local</span>
+            <span>Generación</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
          <SidebarMenuItem>
@@ -124,7 +113,6 @@ export default function Home() {
             <Header />
             <main className="flex-1 overflow-y-auto">
               {activeView === 'gemini' && <GeminiControlPanel />}
-              {activeView === 'local' && <LocalControlPanel />}
               {activeView === 'prompt-generator' && <PromptGeneratorPanel generatedPrompts={generatedPrompts} setGeneratedPrompts={handleSetGeneratedPrompts} />}
               {activeView === 'history' && <ImageHistory />}
             </main>

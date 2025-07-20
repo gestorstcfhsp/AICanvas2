@@ -1,288 +1,331 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, Fragment } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Wand2, Layers, RefreshCw, X, Trash2, Loader2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { Wand2, Image as ImageIcon, Loader2, DownloadCloud } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { refinePrompt } from '@/ai/flows/refine-prompt';
-import { generateImage } from '@/ai/flows/generate-image';
-import { translateText } from '@/ai/flows/translate-text';
+import { generateImage as generateImageWithGemini } from '@/ai/flows/generate-image';
 import { db, type AIImage } from '@/lib/db';
 import { dataUrlToBlob, getImageMetadata } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Switch } from "@/components/ui/switch"
-import { Progress } from "@/components/ui/progress"
-import { Separator } from '@/components/ui/separator';
-import BatchResultItem from './BatchResultItem';
+import { Input } from '../ui/input';
+import { Slider } from '../ui/slider';
 
-export type BatchResult = {
-  prompt: string;
-  status: 'success' | 'failed' | 'pending';
-  error?: string;
-  newImage?: AIImage;
-};
+const refinementModels = [
+  { value: 'googleai/gemini-2.0-flash', label: 'Gemini Flash' },
+];
 
-const BATCH_RESULTS_STORAGE_KEY = 'batchGenerationResults';
-
-function getFriendlyErrorMessage(error: any): string {
-    const errorMessage = error?.message || 'Error desconocido';
-    if (errorMessage.includes('429')) {
-        return 'La generación falló debido a la alta demanda (límite de frecuencia excedido). Por favor, espera un momento y vuelve a intentarlo.';
-    }
-    if (errorMessage.includes('SAFETY')) {
-        return 'La generación fue bloqueada por filtros de seguridad. Intenta con un prompt diferente.';
-    }
-    return errorMessage;
-}
-
-const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+type ImageModel = 'Gemini Flash' | 'Stable Diffusion (Local)';
 
 export default function GeminiControlPanel() {
   const { toast } = useToast();
-  const [promptsText, setPromptsText] = useState('');
+  const [promptText, setPromptText] = useState('');
+  const [refinementModel, setRefinementModel] = useState(refinementModels[0].value);
+  const [imageModel, setImageModel] = useState<ImageModel>('Gemini Flash');
   const [isRefining, setIsRefining] = useState(false);
-  const [isBatchGenerating, setIsBatchGenerating] = useState(false);
-  const [refineBatch, setRefineBatch] = useState(true);
-  const [progress, setProgress] = useState(0);
-  const [batchResults, setBatchResults] = useState<BatchResult[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  useEffect(() => {
-    try {
-      const storedResults = localStorage.getItem(BATCH_RESULTS_STORAGE_KEY);
-      if (storedResults) {
-        const parsedResults: BatchResult[] = JSON.parse(storedResults);
-        const restoredResults = parsedResults.map(r => 
-            r.status === 'pending' ? { ...r, status: 'failed' as const, error: 'Proceso interrumpido' } : r
-        );
-        setBatchResults(restoredResults);
-      }
-    } catch (error) {
-      console.error("Failed to load batch results from localStorage", error);
-    }
-  }, []);
-
-  useEffect(() => {
-    try {
-      if (batchResults.length > 0) {
-        const resultsToStore = batchResults.map(({ newImage, ...rest }) => rest);
-        localStorage.setItem(BATCH_RESULTS_STORAGE_KEY, JSON.stringify(resultsToStore));
-      } else {
-        localStorage.removeItem(BATCH_RESULTS_STORAGE_KEY);
-      }
-    } catch (error) {
-      console.error("Failed to save batch results to localStorage", error);
-    }
-  }, [batchResults]);
-
+  // Local state
+  const [apiEndpoint, setApiEndpoint] = useState('http://127.0.0.1:7860/sdapi/v1/txt2img');
+  const [checkpointModel, setCheckpointModel] = useState('');
+  const [negativePrompt, setNegativePrompt] = useState('');
+  const [steps, setSteps] = useState([25]);
+  const [cfgScale, setCfgScale] = useState([7]);
+  const [isFetchingCheckpoint, setIsFetchingCheckpoint] = useState(false);
 
   const handleRefinePrompt = async () => {
-    const prompts = promptsText.split('\n').filter(p => p.trim() !== '');
-    if (prompts.length !== 1) {
-      toast({ title: 'Refinamiento no disponible', description: 'Por favor, introduce un único prompt para refinar.', variant: 'destructive' });
+    if (!promptText.trim()) {
+      toast({ title: 'El prompt está vacío', description: 'Por favor, introduce un prompt para refinar.', variant: 'destructive' });
       return;
     }
-    
     setIsRefining(true);
     try {
-      const result = await refinePrompt({ promptText: prompts[0], model: 'googleai/gemini-2.0-flash' });
-      setPromptsText(result.refinedPrompt);
+      const result = await refinePrompt({ promptText, model: refinementModel });
+      setPromptText(result.refinedPrompt);
       toast({ title: 'Prompt Refinado', description: 'Tu prompt ha sido mejorado.' });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Refine failed:', error);
-      toast({ title: 'Error al Refinar', description: getFriendlyErrorMessage(error), variant: 'destructive' });
+      toast({ title: 'Error al Refinar', description: 'No se pudo refinar el prompt.', variant: 'destructive' });
     } finally {
       setIsRefining(false);
     }
   };
 
-  const handleGenerateImage = async (originalPrompt: string, refinedPromptText: string | null) => {
-    if (!originalPrompt.trim()) {
-      throw new Error('El prompt no puede estar vacío.');
+  const handleFetchCheckpoint = async () => {
+    setIsFetchingCheckpoint(true);
+    try {
+        const baseUrl = new URL(apiEndpoint);
+        const optionsUrl = new URL('/sdapi/v1/options', baseUrl.origin);
+
+        const response = await fetch(optionsUrl.toString());
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            throw new Error(`Error de la API local (${response.status}): ${errorBody}`);
+        }
+        
+        const config = await response.json();
+
+        if (!config.sd_model_checkpoint) {
+            throw new Error('No se pudo encontrar el checkpoint en la configuración de la API.');
+        }
+        
+        setCheckpointModel(config.sd_model_checkpoint);
+        toast({
+            title: 'Checkpoint Obtenido',
+            description: `Modelo base actual: ${config.sd_model_checkpoint}`
+        });
+
+    } catch (error: any) {
+        console.error('Failed to fetch checkpoint:', error);
+        let description = 'Ha ocurrido un error desconocido.';
+        if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+            description = 'No se pudo conectar con la API local. Comprueba que el servidor esté en ejecución y que la dirección IP sea correcta. Si esta página se sirve por HTTPS, el navegador bloqueará las peticiones a un servidor HTTP local (error de contenido mixto).';
+        } else {
+            description = error.message;
+        }
+        toast({
+            title: 'Error al Obtener Checkpoint',
+            description,
+            variant: 'destructive',
+        });
+    } finally {
+        setIsFetchingCheckpoint(false);
     }
-    
-    const finalPrompt = refinedPromptText || originalPrompt;
-
-    const result = await generateImage({ prompt: finalPrompt });
-    const blob = await dataUrlToBlob(result.imageUrl);
-    const metadata = await getImageMetadata(result.imageUrl);
-
-    const newImage: Omit<AIImage, 'id' | 'name'> = {
-      prompt: originalPrompt,
-      refinedPrompt: refinedPromptText || '',
-      model: 'Gemini Flash' as const,
-      resolution: { width: metadata.width, height: metadata.height },
-      size: blob.size,
-      isFavorite: 0 as const,
-      tags: [],
-      blob,
-      createdAt: new Date(),
-    };
-    
-    const imageId = await db.images.add({ ...newImage, name: finalPrompt.substring(0, 50) + '...' } as AIImage);
-    
-    translateText({ text: finalPrompt, targetLanguage: 'Spanish' })
-        .then(translationResult => {
-            db.images.update(imageId, { translation: translationResult.translation });
-        })
-        .catch(err => console.error("Auto-translation failed:", err));
-
-    return { ...newImage, id: imageId, name: finalPrompt.substring(0, 50) + '...' };
   };
-  
-  const handleBatchGenerate = async (promptsToProcess: string[], shouldRefine: boolean) => {
-    if (promptsToProcess.length === 0) {
-      toast({ title: 'No hay prompts', description: 'Por favor, introduce al menos un prompt.', variant: 'destructive' });
+
+  const generateWithStableDiffusion = async () => {
+    try {
+      const payload: any = {
+          prompt: promptText,
+          negative_prompt: negativePrompt,
+          steps: steps[0],
+          cfg_scale: cfgScale[0],
+          width: 512,
+          height: 512,
+      };
+
+      if (checkpointModel) {
+          payload.override_settings = {
+              sd_model_checkpoint: checkpointModel
+          };
+      }
+
+      const response = await fetch(apiEndpoint, {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+          const errorBody = await response.text();
+          throw new Error(`Error de la API local (${response.status}): ${errorBody}`);
+      }
+      
+      const result = await response.json();
+      
+      if (!result.images || result.images.length === 0) {
+          throw new Error('La API local no devolvió ninguna imagen.');
+      }
+
+      return `data:image/png;base64,${result.images[0]}`;
+
+    } catch (error: any) {
+        console.error('Local generation failed:', error);
+        let description = 'Ha ocurrido un error desconocido.';
+        if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+            description = 'No se pudo conectar con la API local. Comprueba que el servidor esté en ejecución, que la dirección IP sea correcta y que no haya un problema de contenido mixto (página HTTPS llamando a servidor HTTP). Asegúrate de que los CORS están bien configurados.';
+        } else {
+            description = error.message;
+        }
+        toast({ title: 'Error en Generación Local', description, variant: 'destructive' });
+        return null;
+    }
+  };
+
+  const handleGenerateImage = async () => {
+    if (!promptText.trim()) {
+      toast({ title: 'El prompt está vacío', description: 'Por favor, introduce un prompt para generar una imagen.', variant: 'destructive' });
       return;
     }
-    
-    setIsBatchGenerating(true);
-    setProgress(0);
-    
-    const initialResults: BatchResult[] = promptsToProcess.map(prompt => ({ prompt, status: 'pending' }));
-    setBatchResults(prevResults => {
-        const newPrompts = promptsToProcess.filter(p => !prevResults.some(pr => pr.prompt === p));
-        const updatedResults = prevResults.map(pr => promptsToProcess.includes(pr.prompt) ? { ...pr, status: 'pending' as const, error: undefined } : pr);
-        return [...updatedResults, ...newPrompts.map(p => ({ prompt: p, status: 'pending' as const }))];
-    });
+    setIsGenerating(true);
+    try {
+      let imageUrl: string | null = null;
+      let refinedPromptUsed = ''; // We can fill this if we refine the prompt before generation
 
-    
-    let generatedCount = 0;
-    
-    for (let i = 0; i < promptsToProcess.length; i++) {
-        const currentPrompt = promptsToProcess[i];
-        let newResult: BatchResult;
-        
-        try {
-            let refinedPromptText: string | null = null;
-            if (shouldRefine) {
-                const refinedResult = await refinePrompt({ promptText: currentPrompt, model: 'googleai/gemini-2.0-flash' });
-                refinedPromptText = refinedResult.refinedPrompt;
-            }
-            
-            const newImage = await handleGenerateImage(currentPrompt, refinedPromptText);
-            generatedCount++;
-            newResult = { prompt: currentPrompt, status: 'success', newImage };
-        } catch (error: any) {
-            console.error(`Failed to generate for prompt "${currentPrompt}":`, error);
-            newResult = { prompt: currentPrompt, status: 'failed', error: getFriendlyErrorMessage(error) };
-        } 
-        
-        setProgress(((i + 1) / promptsToProcess.length) * 100);
-        setBatchResults(prev => prev.map(r => r.prompt === currentPrompt ? newResult : r));
+      if (imageModel === 'Gemini Flash') {
+        const result = await generateImageWithGemini({ prompt: promptText });
+        imageUrl = result.imageUrl;
+      } else {
+        imageUrl = await generateWithStableDiffusion();
+      }
 
-        if (i < promptsToProcess.length - 1) {
-            await delay(2000); // Wait for 2 seconds before the next request
-        }
+      if (!imageUrl) {
+        // Error toast is handled inside the specific generation function
+        return;
+      }
+
+      const blob = await dataUrlToBlob(imageUrl);
+      const metadata = await getImageMetadata(imageUrl);
+
+      const newImage: Omit<AIImage, 'id'> = {
+        name: promptText.substring(0, 50) + '...',
+        prompt: promptText,
+        refinedPrompt: refinedPromptUsed,
+        model: imageModel,
+        resolution: { width: metadata.width, height: metadata.height },
+        size: blob.size,
+        isFavorite: 0 as const,
+        tags: [],
+        blob,
+        createdAt: new Date(),
+        ...(imageModel === 'Stable Diffusion (Local)' && { checkpointModel }),
+      };
+      
+      await db.images.add(newImage as AIImage);
+      toast({ title: '¡Imagen Generada!', description: 'Tu nueva imagen ha sido guardada en el historial.' });
+    } catch (error) {
+      console.error('Generation failed:', error);
+      toast({ title: 'Error al Generar', description: 'No se pudo generar la imagen.', variant: 'destructive' });
+    } finally {
+      setIsGenerating(false);
     }
-    
-    toast({ title: 'Proceso por Lotes Terminado', description: `Se generaron ${generatedCount} de ${promptsToProcess.length} imágenes.` });
-    setIsBatchGenerating(false);
   };
   
-  const initialBatchRun = () => {
-    const prompts = promptsText.split('\n').filter(p => p.trim() !== '');
-    setBatchResults([]);
-    handleBatchGenerate(prompts, refineBatch);
-  }
-
-  const retryFailedPrompts = () => {
-    const failedPrompts = batchResults.filter(r => r.status === 'failed').map(r => r.prompt);
-    handleBatchGenerate(failedPrompts, true);
-  }
-
-  const handleClearBatchResults = () => {
-    setBatchResults([]);
-  }
-  
-  const isLoading = isRefining || isBatchGenerating;
-  const failedPromptsCount = batchResults.filter(r => r.status === 'failed').length;
-  const promptsCount = promptsText.split('\n').filter(p => p.trim() !== '').length;
+  const isLoading = isGenerating || isRefining || isFetchingCheckpoint;
 
   return (
     <div className="flex h-full items-center justify-center p-4 md:p-6">
-      <Card className="w-full max-w-2xl">
+       <Card className="w-full max-w-2xl">
         <CardHeader>
-          <CardTitle className="font-headline text-2xl">Controles de Generación (Gemini)</CardTitle>
-          <CardDescription>Define los parámetros para crear tu próxima obra de arte con los modelos de Google.</CardDescription>
+            <CardTitle className="font-headline text-2xl">Controles de Generación</CardTitle>
+            <CardDescription>Define los parámetros para crear tu próxima obra de arte.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          <div className="space-y-2">
+            <Label>Modelo de Generación de Imágenes</Label>
+            <Select value={imageModel} onValueChange={(v: ImageModel) => setImageModel(v)} disabled={isLoading}>
+            <SelectTrigger>
+                <SelectValue placeholder="Seleccionar modelo" />
+            </SelectTrigger>
+            <SelectContent>
+                <SelectItem value="Gemini Flash">Gemini Flash</SelectItem>
+                <SelectItem value="Stable Diffusion (Local)">Stable Diffusion (Local)</SelectItem>
+            </SelectContent>
+            </Select>
+          </div>
+
+          <div className="relative">
+            <Label htmlFor="prompt">Prompt</Label>
+            <Textarea
+              id="prompt"
+              placeholder="Un paisaje urbano futurista al atardecer, estilo synthwave..."
+              value={promptText}
+              onChange={(e) => setPromptText(e.target.value)}
+              rows={6}
+              className="mt-1"
+              disabled={isLoading}
+            />
+          </div>
+          
+          <Separator />
+          
+          {imageModel === 'Gemini Flash' ? (
             <div className="space-y-2">
-                <Label htmlFor="batch-prompts">Prompts (uno por línea)</Label>
-                <div className="relative">
-                    <Textarea
-                    id="batch-prompts"
-                    placeholder="Un gato astronauta en la luna..."
-                    value={promptsText}
-                    onChange={(e) => setPromptsText(e.target.value)}
-                    rows={8}
-                    disabled={isLoading}
-                    className="pr-10"
-                    />
-                    {promptsText && (
-                        <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-1 top-1.5 h-7 w-7 text-muted-foreground"
-                        onClick={() => setPromptsText('')}
-                        disabled={isLoading}
-                        >
-                        <X className="h-5 w-5" />
-                        <span className="sr-only">Limpiar prompts</span>
-                        </Button>
-                    )}
+                <Label>Modelo de Refinamiento</Label>
+                <div className="flex items-center gap-2">
+                <Select value={refinementModel} onValueChange={setRefinementModel} disabled={isLoading}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar modelo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {refinementModels.map(model => (
+                            <SelectItem key={model.value} value={model.value}>{model.label}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                <Button variant="outline" size="icon" onClick={handleRefinePrompt} disabled={isLoading || !promptText.trim()} className="shrink-0">
+                    {isRefining ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+                    <span className="sr-only">Refinar Prompt</span>
+                </Button>
                 </div>
             </div>
-
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="flex items-center space-x-2">
-                  <Switch id="refine-batch" checked={refineBatch} onCheckedChange={setRefineBatch} disabled={isLoading} />
-                  <Label htmlFor="refine-batch">Refinar prompts antes de generar</Label>
+          ) : (
+            <Fragment>
+              <div className="space-y-2">
+                <Label htmlFor="api-endpoint">Endpoint de la API Local (txt2img)</Label>
+                <Input
+                  id="api-endpoint"
+                  value={apiEndpoint}
+                  onChange={(e) => setApiEndpoint(e.target.value)}
+                  placeholder="http://127.0.0.1:7860/sdapi/v1/txt2img"
+                  disabled={isLoading}
+                />
               </div>
-              <Button variant="outline" onClick={handleRefinePrompt} disabled={isLoading || promptsCount !== 1}>
-                  {isRefining ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
-                  {isRefining ? 'Refinando...' : 'Refinar Prompt Único'}
-              </Button>
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="checkpoint-model">Modelo de Checkpoint (Opcional)</Label>
+                <div className="flex items-center gap-2">
+                    <Input
+                    id="checkpoint-model"
+                    value={checkpointModel}
+                    onChange={(e) => setCheckpointModel(e.target.value)}
+                    placeholder="Dejar en blanco para usar el modelo base o autocompletar..."
+                    disabled={isLoading}
+                    />
+                    <Button variant="outline" size="icon" onClick={handleFetchCheckpoint} disabled={isLoading}>
+                        {isFetchingCheckpoint ? <Loader2 className="h-4 w-4 animate-spin" /> : <DownloadCloud className="h-4 w-4" />}
+                        <span className="sr-only">Obtener Checkpoint</span>
+                    </Button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                    <Label htmlFor="negative-prompt-local">Prompt Negativo</Label>
+                    <Textarea
+                    id="negative-prompt-local"
+                    value={negativePrompt}
+                    onChange={(e) => setNegativePrompt(e.target.value)}
+                    placeholder="Mala calidad, borroso, texto, marca de agua..."
+                    rows={3}
+                    disabled={isLoading}
+                    />
+                </div>
+              <div className="space-y-3">
+                <Label>Pasos de Muestreo: <span className="text-primary font-mono">{steps}</span></Label>
+                <Slider
+                  min={1}
+                  max={100}
+                  step={1}
+                  value={steps}
+                  onValueChange={setSteps}
+                  disabled={isLoading}
+                />
+              </div>
+              <div className="space-y-3">
+                <Label>Escala de CFG: <span className="text-primary font-mono">{cfgScale[0]}</span></Label>
+                <Slider
+                  min={1}
+                  max={20}
+                  step={0.5}
+                  value={cfgScale}
+                  onValueChange={setCfgScale}
+                  disabled={isLoading}
+                />
+              </div>
+            </Fragment>
+          )}
 
-            {isBatchGenerating && (
-            <div className="space-y-2">
-                <Label>Progreso</Label>
-                <Progress value={progress} className="w-full" />
-            </div>
-            )}
-            <Button onClick={initialBatchRun} disabled={isLoading || !promptsText.trim()} className="w-full">
-            {isBatchGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Layers className="mr-2 h-4 w-4" />}
-            {isBatchGenerating ? `Generando... (${Math.round(progress)}%)` : `Generar ${promptsCount > 0 ? promptsCount : ''} ${promptsCount === 1 ? 'Imagen' : 'Imágenes'}`}
+           <Button onClick={handleGenerateImage} disabled={isLoading || !promptText.trim()} className="w-full">
+                {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageIcon className="mr-2 h-4 w-4" />}
+                {isGenerating ? 'Generando...' : 'Generar Imagen'}
             </Button>
-
-            {batchResults.length > 0 && (
-            <div className="space-y-4 pt-4">
-                <Separator />
-                <div className="flex justify-between items-center">
-                <h3 className="font-headline text-lg">Resultados del Lote</h3>
-                    <div className="flex items-center gap-2">
-                    {failedPromptsCount > 0 && !isBatchGenerating && (
-                    <Button variant="outline" size="sm" onClick={retryFailedPrompts} disabled={isLoading}>
-                        <RefreshCw className="mr-2 h-4 w-4" />
-                        Reintentar {failedPromptsCount} Fallidos
-                    </Button>
-                    )}
-                    <Button variant="ghost" size="icon" onClick={handleClearBatchResults} disabled={isLoading} className="h-8 w-8">
-                        <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">Limpiar resultados del lote</span>
-                    </Button>
-                </div>
-                </div>
-                <div className="max-h-60 space-y-2 overflow-y-auto rounded-md border p-2">
-                {batchResults.map((result, index) => (
-                    <BatchResultItem key={`${result.prompt}-${index}`} result={result} />
-                ))}
-                </div>
-            </div>
-            )}
         </CardContent>
       </Card>
     </div>
