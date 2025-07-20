@@ -3,16 +3,17 @@
 import React, { useState } from 'react';
 import { SidebarProvider, Sidebar, SidebarInset, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import Header from '@/components/layout/Header';
-import ControlPanel from '@/components/sidebar/ControlPanel';
+import GeminiControlPanel from '@/components/sidebar/GeminiControlPanel';
+import LocalControlPanel from '@/components/sidebar/LocalControlPanel';
 import ImageHistory from '@/components/gallery/ImageHistory';
 import ImageInspector from '@/components/gallery/ImageInspector';
 import type { AIImage } from '@/lib/db';
 import { db } from '@/lib/db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { AppContext } from '@/context/AppContext';
-import { ImageIcon, History } from 'lucide-react';
+import { Sparkles, Server, History } from 'lucide-react';
 
-type View = 'generate' | 'history';
+type View = 'gemini' | 'local' | 'history';
 
 function AppSidebar({ activeView, setActiveView }: { activeView: View, setActiveView: (view: View) => void }) {
   return (
@@ -20,12 +21,22 @@ function AppSidebar({ activeView, setActiveView }: { activeView: View, setActive
       <SidebarMenu>
         <SidebarMenuItem>
           <SidebarMenuButton 
-            isActive={activeView === 'generate'} 
-            onClick={() => setActiveView('generate')}
-            tooltip="Generar Imagen"
+            isActive={activeView === 'gemini'} 
+            onClick={() => setActiveView('gemini')}
+            tooltip="Generación con Gemini"
           >
-            <ImageIcon />
-            <span>Generar Imagen</span>
+            <Sparkles />
+            <span>Gemini</span>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton 
+            isActive={activeView === 'local'} 
+            onClick={() => setActiveView('local')}
+            tooltip="Generación Local"
+          >
+            <Server />
+            <span>Local</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
         <SidebarMenuItem>
@@ -46,7 +57,7 @@ function AppSidebar({ activeView, setActiveView }: { activeView: View, setActive
 
 export default function Home() {
   const [inspectedImageId, setInspectedImageId] = useState<number | null>(null);
-  const [activeView, setActiveView] = useState<View>('generate');
+  const [activeView, setActiveView] = useState<View>('gemini');
 
   const inspectedImage = useLiveQuery(() => {
     if (inspectedImageId === null) return undefined;
@@ -67,7 +78,8 @@ export default function Home() {
           <div className="flex flex-col h-screen bg-background">
             <Header />
             <main className="flex-1 overflow-y-auto">
-              {activeView === 'generate' && <ControlPanel />}
+              {activeView === 'gemini' && <GeminiControlPanel />}
+              {activeView === 'local' && <LocalControlPanel />}
               {activeView === 'history' && <ImageHistory />}
             </main>
           </div>
