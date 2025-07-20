@@ -21,7 +21,10 @@ export default function PromptGeneratorPanel() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
-      if (selectedFile.type === 'text/plain' || selectedFile.type === 'text/markdown') {
+      const isTxt = selectedFile.name.toLowerCase().endsWith('.txt');
+      const isMd = selectedFile.name.toLowerCase().endsWith('.md');
+      
+      if (isTxt || isMd) {
         setFile(selectedFile);
         setFileName(selectedFile.name);
         setGeneratedPrompts([]);
