@@ -1,10 +1,33 @@
+
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Server, Construction } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Slider } from '@/components/ui/slider';
+import { Server, Image as ImageIcon } from 'lucide-react';
 
 export default function LocalControlPanel() {
+  const [apiEndpoint, setApiEndpoint] = useState('http://127.0.0.1:7860/sdapi/v1/txt2img');
+  const [prompt, setPrompt] = useState('');
+  const [negativePrompt, setNegativePrompt] = useState('');
+  const [steps, setSteps] = useState([25]);
+  const [cfgScale, setCfgScale] = useState([7]);
+
+  const handleGenerate = () => {
+    // Logic to call the local API will be added here in the future
+    console.log({
+      apiEndpoint,
+      prompt,
+      negativePrompt,
+      steps: steps[0],
+      cfgScale: cfgScale[0],
+    });
+  };
+
   return (
     <div className="flex h-full items-center justify-center p-4 md:p-6">
       <Card className="w-full max-w-2xl">
@@ -14,17 +37,70 @@ export default function LocalControlPanel() {
             Controles de Generación Local
           </CardTitle>
           <CardDescription>
-            Utiliza tus propios modelos de IA para generar imágenes directamente en tu máquina.
+            Utiliza tus propios modelos de IA (ej. Stable Diffusion) para generar imágenes directamente.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/50 p-12 text-center text-muted-foreground">
-            <Construction className="h-12 w-12 mb-4" />
-            <h3 className="text-lg font-semibold">En Construcción</h3>
-            <p className="mt-2 max-w-sm">
-              Esta funcionalidad para generar imágenes con modelos locales se está desarrollando activamente.
-            </p>
+        <CardContent className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="api-endpoint">Endpoint de la API Local</Label>
+            <Input
+              id="api-endpoint"
+              value={apiEndpoint}
+              onChange={(e) => setApiEndpoint(e.target.value)}
+              placeholder="http://127.0.0.1:7860/sdapi/v1/txt2img"
+            />
           </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+                <Label htmlFor="prompt-local">Prompt</Label>
+                <Textarea
+                id="prompt-local"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="Un castillo en las nubes, arte digital detallado..."
+                rows={5}
+                />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="negative-prompt-local">Prompt Negativo</Label>
+                <Textarea
+                id="negative-prompt-local"
+                value={negativePrompt}
+                onChange={(e) => setNegativePrompt(e.target.value)}
+                placeholder="Mala calidad, borroso, texto, marca de agua..."
+                rows={5}
+                />
+            </div>
+          </div>
+          
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <Label>Pasos de Muestreo: <span className="text-primary font-mono">{steps}</span></Label>
+              <Slider
+                min={1}
+                max={100}
+                step={1}
+                value={steps}
+                onValueChange={setSteps}
+              />
+            </div>
+             <div className="space-y-3">
+              <Label>Escala de CFG: <span className="text-primary font-mono">{cfgScale}</span></Label>
+              <Slider
+                min={1}
+                max={20}
+                step={0.5}
+                value={cfgScale}
+                onValueChange={setCfgScale}
+              />
+            </div>
+          </div>
+          
+          <Button onClick={handleGenerate} className="w-full">
+            <ImageIcon className="mr-2" />
+            Generar Imagen
+          </Button>
+
         </CardContent>
       </Card>
     </div>
