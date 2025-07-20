@@ -27,6 +27,14 @@ export type BatchResult = {
 
 const BATCH_RESULTS_STORAGE_KEY = 'batchGenerationResults';
 
+function getFriendlyErrorMessage(error: any): string {
+    const errorMessage = error.message || 'Error desconocido';
+    if (errorMessage.includes('429 Too Many Requests')) {
+        return 'Límite de cuota excedido. Has alcanzado el límite de generación de imágenes por hoy. Inténtalo de nuevo más tarde.';
+    }
+    return errorMessage;
+}
+
 export default function GeminiControlPanel() {
   const { toast } = useToast();
   const [promptText, setPromptText] = useState('');
@@ -125,9 +133,9 @@ export default function GeminiControlPanel() {
      try {
         await handleGenerateImage(promptText, null);
         toast({ title: '¡Imagen Generada!', description: 'Tu nueva imagen ha sido guardada en el historial.' });
-     } catch (error) {
+     } catch (error: any) {
         console.error('Generation failed:', error);
-        toast({ title: 'Error al Generar', description: 'No se pudo generar la imagen.', variant: 'destructive' });
+        toast({ title: 'Error al Generar', description: getFriendlyErrorMessage(error), variant: 'destructive' });
      } finally {
         setIsGenerating(false);
      }
@@ -168,7 +176,7 @@ export default function GeminiControlPanel() {
             newResult = { prompt: currentPrompt, status: 'success', newImage };
         } catch (error: any) {
             console.error(`Failed to generate for prompt "${currentPrompt}":`, error);
-            newResult = { prompt: currentPrompt, status: 'failed', error: error.message || 'Error desconocido' };
+            newResult = { prompt: currentPrompt, status: 'failed', error: getFriendlyErrorMessage(error) };
         } 
         
         setProgress(((i + 1) / promptsToProcess.length) * 100);
