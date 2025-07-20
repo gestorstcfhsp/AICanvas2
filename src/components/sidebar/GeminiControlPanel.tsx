@@ -26,6 +26,7 @@ export default function GeminiControlPanel() {
   const [imageModel] = useState<'Gemini Flash' | 'Stable Diffusion'>('Gemini Flash');
   const [isRefining, setIsRefining] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [lastRefinedPrompt, setLastRefinedPrompt] = useState('');
 
   const handleRefinePrompt = async () => {
     if (!promptText.trim()) {
@@ -36,6 +37,7 @@ export default function GeminiControlPanel() {
     try {
       const result = await refinePrompt({ promptText, model: refinementModel });
       setPromptText(result.refinedPrompt);
+      setLastRefinedPrompt(result.refinedPrompt);
       toast({ title: 'Prompt Refinado', description: 'Tu prompt ha sido mejorado.' });
     } catch (error) {
       console.error('Refine failed:', error);
@@ -56,10 +58,13 @@ export default function GeminiControlPanel() {
       const blob = await dataUrlToBlob(result.imageUrl);
       const metadata = await getImageMetadata(result.imageUrl);
 
+      // Check if the current prompt is the one that was last refined
+      const refinedPromptForDB = promptText === lastRefinedPrompt ? promptText : '';
+
       const newImage = {
         name: promptText.substring(0, 50) + '...',
         prompt: promptText,
-        refinedPrompt: '',
+        refinedPrompt: refinedPromptForDB,
         model: imageModel,
         resolution: { width: metadata.width, height: metadata.height },
         size: blob.size,
@@ -71,9 +76,20 @@ export default function GeminiControlPanel() {
       
       await db.images.add(newImage);
       toast({ title: '¡Imagen Generada!', description: 'Tu nueva imagen ha sido guardada en el historial.' });
-    } catch (error) {
+      setPromptText(''); // Clear prompt only on success
+      setLastRefinedPrompt('');
+    } catch (error: any) {
       console.error('Generation failed:', error);
-      toast({ title: 'Error al Generar', description: 'No se pudo generar la imagen.', variant: 'destructive' });
+      let description = 'No se pudo generar la imagen.';
+      if (error.message && error.message.includes('429')) {
+        description = 'Has superado tu cuota de generación de imágenes. Por favor, inténtalo de nuevo más tarde o revisa tu plan de facturación de Google AI.';
+      }
+      toast({ 
+        title: 'Error al Generar', 
+        description,
+        variant: 'destructive',
+        duration: 9000
+      });
     } finally {
       setIsGenerating(false);
     }
@@ -126,7 +142,7 @@ export default function GeminiControlPanel() {
             </div>
             <div className="space-y-2">
                 <Label>Modelo de Generación de Imágenes</Label>
-                <Select value={imageModel} onValueChange={(v) => console.log(v)} disabled={true}>
+                <Select value={imageModel} disabled={true}>
                 <SelectTrigger>
                     <SelectValue placeholder="Seleccionar modelo" />
                 </SelectTrigger>

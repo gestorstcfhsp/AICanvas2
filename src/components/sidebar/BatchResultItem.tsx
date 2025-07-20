@@ -2,8 +2,8 @@
 'use client';
 
 import React from 'react';
-import type { BatchResult } from './GeminiControlPanel';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import type { BatchResult } from './BatchControlPanel';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle2, XCircle, AlertTriangle, Loader2 } from 'lucide-react';
 
 export default function BatchResultItem({ result }: { result: BatchResult }) {
@@ -27,9 +27,10 @@ export default function BatchResultItem({ result }: { result: BatchResult }) {
         <div className="flex-1 space-y-1">
           <p className="text-sm font-medium leading-none truncate">{result.prompt}</p>
           {result.status === 'failed' && (
-            <Alert variant="destructive" className="mt-2 p-2">
+            <Alert variant="destructive" className="mt-2 p-2 text-xs">
                 <AlertTriangle className="h-4 w-4" />
-                <AlertDescription className="text-xs">
+                <AlertTitle className="font-bold">Error</AlertTitle>
+                <AlertDescription>
                     {result.error}
                 </AlertDescription>
             </Alert>

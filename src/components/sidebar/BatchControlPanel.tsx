@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -39,6 +39,7 @@ export default function BatchControlPanel() {
 
   const handleFetchCheckpoint = async () => {
     setIsFetchingCheckpoint(true);
+    let description = 'Ha ocurrido un error desconocido.';
     try {
         const optionsUrl = apiEndpoint.replace("txt2img", "options");
         const response = await fetch(optionsUrl);
@@ -61,8 +62,7 @@ export default function BatchControlPanel() {
         });
 
     } catch (error: any) {
-        let description = 'Ha ocurrido un error desconocido.';
-        if (error.message.includes('fetch')) {
+        if (error instanceof TypeError && error.message.includes('fetch')) {
             description = 'No se pudo conectar con la API local. Causas comunes: (1) El servidor no está en ejecución. (2) La dirección es incorrecta. (3) Problema de CORS. (4) Error de contenido mixto (página HTTPS a servidor HTTP).';
         } else {
             description = error.message;
@@ -122,10 +122,11 @@ export default function BatchControlPanel() {
     }
     
     setIsGenerating(true);
-    const initialResults = prompts.map((prompt, index) => ({ id: index, prompt, status: 'pending' as const }));
+    const initialResults = prompts.map((prompt, index) => ({ id: Date.now() + index, prompt, status: 'pending' as const }));
     setBatchResults(initialResults);
 
     for (let i = 0; i < prompts.length; i++) {
+        const currentResultId = initialResults[i].id;
         try {
             const prompt = prompts[i];
             const imageUrl = await generateSingleImage(prompt);
@@ -149,16 +150,16 @@ export default function BatchControlPanel() {
 
             await db.images.add(newImage as AIImage);
             
-            setBatchResults(prev => prev.map(r => r.id === i ? { ...r, status: 'success' } : r));
+            setBatchResults(prev => prev.map(r => r.id === currentResultId ? { ...r, status: 'success' } : r));
 
         } catch (error: any) {
              let description = 'Error desconocido.';
-             if (error.message.includes('fetch')) {
-                description = 'Fallo de conexión. Revisa la API, CORS y el error de contenido mixto.';
+             if (error instanceof TypeError && error.message.includes('fetch')) {
+                description = 'Fallo de conexión. Revisa que la API esté activa, la dirección, CORS y el error de contenido mixto.';
             } else {
                 description = error.message;
             }
-            setBatchResults(prev => prev.map(r => r.id === i ? { ...r, status: 'failed', error: description } : r));
+            setBatchResults(prev => prev.map(r => r.id === currentResultId ? { ...r, status: 'failed', error: description } : r));
         }
     }
 
