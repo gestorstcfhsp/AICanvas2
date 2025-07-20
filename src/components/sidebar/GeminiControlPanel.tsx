@@ -38,6 +38,8 @@ function getFriendlyErrorMessage(error: any): string {
     return errorMessage;
 }
 
+const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+
 export default function GeminiControlPanel() {
   const { toast } = useToast();
   const [promptsText, setPromptsText] = useState('');
@@ -170,6 +172,10 @@ export default function GeminiControlPanel() {
         
         setProgress(((i + 1) / promptsToProcess.length) * 100);
         setBatchResults(prev => prev.map(r => r.prompt === currentPrompt ? newResult : r));
+
+        if (i < promptsToProcess.length - 1) {
+            await delay(2000); // Wait for 2 seconds before the next request
+        }
     }
     
     toast({ title: 'Proceso por Lotes Terminado', description: `Se generaron ${generatedCount} de ${promptsToProcess.length} imágenes.` });
