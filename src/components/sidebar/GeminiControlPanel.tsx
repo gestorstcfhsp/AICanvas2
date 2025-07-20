@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Wand2, Image as ImageIcon, Loader2, Bot, Layers, RefreshCw } from 'lucide-react';
+import { Wand2, Image as ImageIcon, Loader2, Bot, Layers, RefreshCw, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { refinePrompt } from '@/ai/flows/refine-prompt';
 import { generateImage } from '@/ai/flows/generate-image';
@@ -170,14 +170,28 @@ export default function GeminiControlPanel() {
             <TabsContent value="single" className="space-y-4 pt-4">
               <div className="space-y-2">
                 <Label htmlFor="prompt">Prompt</Label>
-                <Textarea
-                  id="prompt"
-                  placeholder="Un paisaje urbano futurista al atardecer, estilo synthwave..."
-                  value={promptText}
-                  onChange={(e) => setPromptText(e.target.value)}
-                  rows={6}
-                  disabled={isLoading}
-                />
+                 <div className="relative">
+                    <Textarea
+                    id="prompt"
+                    placeholder="Un paisaje urbano futurista al atardecer, estilo synthwave..."
+                    value={promptText}
+                    onChange={(e) => setPromptText(e.target.value)}
+                    rows={6}
+                    disabled={isLoading}
+                    className="pr-10"
+                    />
+                    {promptText && (
+                        <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-1 top-1.5 h-7 w-7 text-muted-foreground"
+                        onClick={() => setPromptText('')}
+                        >
+                        <X className="h-5 w-5" />
+                        <span className="sr-only">Limpiar prompt</span>
+                        </Button>
+                    )}
+                </div>
                 <Button variant="outline" onClick={handleRefinePrompt} disabled={isLoading || !promptText.trim()} className="w-full md:w-auto">
                   {isRefining ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
                   {isRefining ? 'Refinando...' : 'Refinar Prompt'}
@@ -191,14 +205,28 @@ export default function GeminiControlPanel() {
             <TabsContent value="batch" className="space-y-4 pt-4">
               <div className="space-y-2">
                 <Label htmlFor="batch-prompts">Prompts (uno por línea)</Label>
-                <Textarea
-                  id="batch-prompts"
-                  placeholder="Un gato astronauta en la luna&#10;Un bosque encantado con setas brillantes&#10;Una ciudad submarina..."
-                  value={batchPrompts}
-                  onChange={(e) => setBatchPrompts(e.target.value)}
-                  rows={8}
-                  disabled={isLoading}
-                />
+                <div className="relative">
+                    <Textarea
+                    id="batch-prompts"
+                    placeholder="Un gato astronauta en la luna&#10;Un bosque encantado con setas brillantes&#10;Una ciudad submarina..."
+                    value={batchPrompts}
+                    onChange={(e) => setBatchPrompts(e.target.value)}
+                    rows={8}
+                    disabled={isLoading}
+                    className="pr-10"
+                    />
+                    {batchPrompts && (
+                        <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-1 top-1.5 h-7 w-7 text-muted-foreground"
+                        onClick={() => setBatchPrompts('')}
+                        >
+                        <X className="h-5 w-5" />
+                        <span className="sr-only">Limpiar prompts</span>
+                        </Button>
+                    )}
+                </div>
               </div>
               <div className="flex items-center space-x-2">
                 <Switch id="refine-batch" checked={refineBatch} onCheckedChange={setRefineBatch} disabled={isLoading} />
@@ -241,3 +269,5 @@ export default function GeminiControlPanel() {
     </div>
   );
 }
+
+    
