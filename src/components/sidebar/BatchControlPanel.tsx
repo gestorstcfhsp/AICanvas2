@@ -29,7 +29,7 @@ export default function BatchControlPanel() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [batchResults, setBatchResults] = useState<BatchResult[]>([]);
 
-  // Local state
+  // Local state for Stable Diffusion
   const [apiEndpoint, setApiEndpoint] = useState('http://127.0.0.1:7860/sdapi/v1/txt2img');
   const [checkpointModel, setCheckpointModel] = useState('');
   const [negativePrompt, setNegativePrompt] = useState('');
@@ -63,7 +63,7 @@ export default function BatchControlPanel() {
 
     } catch (error: any) {
         if (error instanceof TypeError && error.message.includes('fetch')) {
-            description = 'No se pudo conectar con la API local. Causas comunes: (1) El servidor no está en ejecución. (2) La dirección es incorrecta. (3) Problema de CORS. (4) Error de contenido mixto (página HTTPS a servidor HTTP).';
+            description = 'No se pudo conectar con la API local. Posibles causas: (1) El servidor no está en ejecución. (2) La dirección es incorrecta. (3) Problema de CORS no configurado en el servidor local. (4) Error de contenido mixto (página HTTPS intentando llamar a un servidor HTTP). Revisa la consola del navegador para más detalles.';
         } else {
             description = error.message;
         }
@@ -138,7 +138,7 @@ export default function BatchControlPanel() {
                 name: prompt.substring(0, 50) + '...',
                 prompt,
                 refinedPrompt: '',
-                model: 'Stable Diffusion (Local)',
+                model: 'Stable Diffusion',
                 resolution: { width: metadata.width, height: metadata.height },
                 size: blob.size,
                 isFavorite: 0 as const,
@@ -155,7 +155,7 @@ export default function BatchControlPanel() {
         } catch (error: any) {
              let description = 'Error desconocido.';
              if (error instanceof TypeError && error.message.includes('fetch')) {
-                description = 'Fallo de conexión. Revisa que la API esté activa, la dirección, CORS y el error de contenido mixto.';
+                description = 'Fallo de conexión. Revisa que la API esté activa, la dirección, CORS y el error de contenido mixto (HTTPS/HTTP).';
             } else {
                 description = error.message;
             }
@@ -194,7 +194,7 @@ export default function BatchControlPanel() {
                     id="checkpoint-model"
                     value={checkpointModel}
                     onChange={(e) => setCheckpointModel(e.target.value)}
-                    placeholder="Dejar en blanco para usar el modelo base o autocompletar..."
+                    placeholder="Dejar en blanco o autocompletar desde la API"
                     disabled={isLoading}
                     />
                     <Button variant="outline" size="icon" onClick={handleFetchCheckpoint} disabled={isLoading}>
@@ -241,7 +241,7 @@ export default function BatchControlPanel() {
                 id="prompts-list"
                 value={promptsText}
                 onChange={(e) => setPromptsText(e.target.value)}
-                placeholder="Un astronauta en un caballo en Marte&#10;Un gato con sombrero de copa leyendo un periódico"
+                placeholder="Un astronauta en un caballo en Marte\nUn gato con sombrero de copa leyendo un periódico"
                 rows={5}
                 disabled={isLoading}
                 />

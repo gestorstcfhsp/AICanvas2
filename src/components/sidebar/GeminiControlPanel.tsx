@@ -22,22 +22,23 @@ const refinementModels = [
 export default function GeminiControlPanel() {
   const { toast } = useToast();
   const [promptText, setPromptText] = useState('');
+  const [originalPrompt, setOriginalPrompt] = useState('');
   const [refinementModel, setRefinementModel] = useState(refinementModels[0].value);
   const [imageModel] = useState<'Gemini Flash' | 'Stable Diffusion'>('Gemini Flash');
   const [isRefining, setIsRefining] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [lastRefinedPrompt, setLastRefinedPrompt] = useState('');
-
+  
   const handleRefinePrompt = async () => {
     if (!promptText.trim()) {
       toast({ title: 'El prompt está vacío', description: 'Por favor, introduce un prompt para refinar.', variant: 'destructive' });
       return;
     }
     setIsRefining(true);
+    // Store original prompt before refining
+    setOriginalPrompt(promptText);
     try {
       const result = await refinePrompt({ promptText, model: refinementModel });
       setPromptText(result.refinedPrompt);
-      setLastRefinedPrompt(result.refinedPrompt);
       toast({ title: 'Prompt Refinado', description: 'Tu prompt ha sido mejorado.' });
     } catch (error) {
       console.error('Refine failed:', error);
@@ -58,13 +59,10 @@ export default function GeminiControlPanel() {
       const blob = await dataUrlToBlob(result.imageUrl);
       const metadata = await getImageMetadata(result.imageUrl);
 
-      // Check if the current prompt is the one that was last refined
-      const refinedPromptForDB = promptText === lastRefinedPrompt ? promptText : '';
-
       const newImage = {
         name: promptText.substring(0, 50) + '...',
-        prompt: promptText,
-        refinedPrompt: refinedPromptForDB,
+        prompt: originalPrompt || promptText,
+        refinedPrompt: originalPrompt ? promptText : '',
         model: imageModel,
         resolution: { width: metadata.width, height: metadata.height },
         size: blob.size,
@@ -76,8 +74,8 @@ export default function GeminiControlPanel() {
       
       await db.images.add(newImage);
       toast({ title: '¡Imagen Generada!', description: 'Tu nueva imagen ha sido guardada en el historial.' });
-      setPromptText(''); // Clear prompt only on success
-      setLastRefinedPrompt('');
+      setPromptText('');
+      setOriginalPrompt('');
     } catch (error: any) {
       console.error('Generation failed:', error);
       let description = 'No se pudo generar la imagen.';
@@ -164,4 +162,3 @@ export default function GeminiControlPanel() {
     </div>
   );
 }
-

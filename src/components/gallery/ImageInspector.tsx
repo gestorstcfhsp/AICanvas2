@@ -21,6 +21,7 @@ interface ImageInspectorProps {
 export default function ImageInspector({ image, open, onOpenChange }: ImageInspectorProps) {
   const [imageUrl, setImageUrl] = useState('');
   const [isTranslating, setIsTranslating] = useState(false);
+  const [translation, setTranslation] = useState(image.translation || '');
 
   useEffect(() => {
     if (image?.blob) {
@@ -32,29 +33,30 @@ export default function ImageInspector({ image, open, onOpenChange }: ImageInspe
 
   useEffect(() => {
     const translateAndSave = async () => {
-      if (image && image.id && !image.translation) {
+      if (image && image.id && !image.translation && !translation) {
         setIsTranslating(true);
         try {
-          // Use refined prompt if available, otherwise original prompt
           const textToTranslate = image.refinedPrompt || image.prompt;
           const result = await translateText({ text: textToTranslate, targetLanguage: 'Spanish' });
           await db.images.update(image.id, { translation: result.translation });
+          setTranslation(result.translation);
         } catch (error) {
           console.error("On-demand translation failed:", error);
-          // Optionally, handle the error in the UI
         } finally {
           setIsTranslating(false);
         }
       }
     };
-    if (open && image.model !== 'Stable Diffusion') { // Only translate for non-local models
+    if (open && image.model !== 'Stable Diffusion') {
       translateAndSave();
     }
+    // Reset translation when image changes
+    setTranslation(image.translation || '');
   }, [image, open]);
 
   if (!image) return null;
   
-  const stillTranslating = isTranslating || (image.model !== 'Stable Diffusion' && !image.translation);
+  const stillTranslating = isTranslating || (image.model !== 'Stable Diffusion' && !translation);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -102,7 +104,7 @@ export default function ImageInspector({ image, open, onOpenChange }: ImageInspe
                                     <Skeleton className="h-4 w-2/3" />
                                 </div>
                             ) : (
-                                <p className="rounded-md bg-muted/50 p-3 text-muted-foreground">{image.translation}</p>
+                                <p className="rounded-md bg-muted/50 p-3 text-muted-foreground">{translation}</p>
                             )}
                         </div>
                      )}
