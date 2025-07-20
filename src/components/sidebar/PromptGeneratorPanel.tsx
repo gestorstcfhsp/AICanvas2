@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { generatePromptsFromDocument } from '@/ai/flows/prompts-from-doc';
-import { Upload, FileText, Copy, Loader2, Check } from 'lucide-react';
+import { Upload, FileText, Copy, Loader2, Check, Sparkles } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function PromptGeneratorPanel() {
