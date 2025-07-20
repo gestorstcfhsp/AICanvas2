@@ -60,10 +60,8 @@ export default function ControlPanel() {
   const handleFetchCheckpoint = async () => {
     setIsFetchingCheckpoint(true);
     try {
-        const baseUrl = new URL(apiEndpoint);
-        const optionsUrl = new URL('/sdapi/v1/options', baseUrl.origin);
-
-        const response = await fetch(optionsUrl.toString());
+        const optionsUrl = apiEndpoint.replace("txt2img", "options");
+        const response = await fetch(optionsUrl);
 
         if (!response.ok) {
             const errorBody = await response.text();
@@ -85,8 +83,8 @@ export default function ControlPanel() {
     } catch (error: any) {
         console.error('Failed to fetch checkpoint:', error);
         let description = 'Ha ocurrido un error desconocido.';
-        if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-            description = 'No se pudo conectar con la API local. Comprueba que el servidor esté en ejecución y que la dirección IP sea correcta. Si esta página se sirve por HTTPS, el navegador bloqueará las peticiones a un servidor HTTP local (error de contenido mixto). Revisa la consola del navegador para más detalles.';
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            description = 'No se pudo conectar con la API local. Causas comunes: (1) El servidor no está en ejecución. (2) La dirección es incorrecta. (3) Estás en una página HTTPS intentando llamar a un servidor HTTP (error de contenido mixto). (4) Problema de CORS en el servidor local.';
         } else {
             description = error.message;
         }
@@ -142,8 +140,8 @@ export default function ControlPanel() {
     } catch (error: any) {
         console.error('Local generation failed:', error);
         let description = 'Ha ocurrido un error desconocido.';
-        if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-            description = 'No se pudo conectar con la API local. Comprueba que el servidor esté en ejecución, que la dirección IP sea correcta y que no haya un problema de contenido mixto (página HTTPS llamando a servidor HTTP). Asegúrate de que los CORS están bien configurados.';
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            description = 'No se pudo conectar con la API local. Causas comunes: (1) El servidor no está en ejecución. (2) La dirección es incorrecta. (3) Estás en una página HTTPS intentando llamar a un servidor HTTP (error de contenido mixto). (4) Problema de CORS en el servidor local.';
         } else {
             description = error.message;
         }
