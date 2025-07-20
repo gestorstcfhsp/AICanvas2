@@ -14,10 +14,15 @@ import { db } from '@/lib/db';
 import { dataUrlToBlob, getImageMetadata } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
+const refinementModels = [
+  { value: 'googleai/gemini-2.0-flash', label: 'Gemini Flash' },
+];
+
 export default function ControlPanel() {
   const { toast } = useToast();
   const [promptText, setPromptText] = useState('');
-  const [imageModel, setImageModel] = useState<'Gemini Flash' | 'Stable Diffusion'>('Gemini Flash');
+  const [refinementModel, setRefinementModel] = useState(refinementModels[0].value);
+  const [imageModel] = useState<'Gemini Flash' | 'Stable Diffusion'>('Gemini Flash');
   const [isRefining, setIsRefining] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -28,7 +33,7 @@ export default function ControlPanel() {
     }
     setIsRefining(true);
     try {
-      const result = await refinePrompt({ promptText });
+      const result = await refinePrompt({ promptText, model: refinementModel });
       setPromptText(result.refinedPrompt);
       toast({ title: 'Prompt Refinado', description: 'Tu prompt ha sido mejorado.' });
     } catch (error) {
@@ -91,29 +96,47 @@ export default function ControlPanel() {
               value={promptText}
               onChange={(e) => setPromptText(e.target.value)}
               rows={6}
-              className="mt-1 pr-12"
+              className="mt-1"
               disabled={isLoading}
             />
-             <Button variant="outline" size="icon" onClick={handleRefinePrompt} disabled={isLoading || !promptText.trim()} className="absolute bottom-2 right-2 shrink-0">
-                {isRefining ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-                 <span className="sr-only">Refinar Prompt</span>
-              </Button>
           </div>
           
           <Separator />
           
-          <div className="space-y-2">
-            <Label>Modelo de Generación de Imágenes</Label>
-             <Select value={imageModel} onValueChange={(v) => setImageModel(v as any)} disabled={true}>
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar modelo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Gemini Flash">Gemini Flash</SelectItem>
-                <SelectItem value="Stable Diffusion" disabled>Stable Diffusion (local)</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+                <Label>Modelo de Refinamiento</Label>
+                <div className="flex items-center gap-2">
+                <Select value={refinementModel} onValueChange={setRefinementModel} disabled={isLoading}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar modelo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {refinementModels.map(model => (
+                            <SelectItem key={model.value} value={model.value}>{model.label}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                <Button variant="outline" size="icon" onClick={handleRefinePrompt} disabled={isLoading || !promptText.trim()} className="shrink-0">
+                    {isRefining ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+                    <span className="sr-only">Refinar Prompt</span>
+                </Button>
+                </div>
+            </div>
+            <div className="space-y-2">
+                <Label>Modelo de Generación de Imágenes</Label>
+                <Select value={imageModel} onValueChange={(v) => console.log(v)} disabled={true}>
+                <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar modelo" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="Gemini Flash">Gemini Flash</SelectItem>
+                    <SelectItem value="Stable Diffusion" disabled>Stable Diffusion</SelectItem>
+                </SelectContent>
+                </Select>
+            </div>
           </div>
+
 
            <Button onClick={handleGenerateImage} disabled={isLoading || !promptText.trim()} className="w-full">
                 {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageIcon className="mr-2 h-4 w-4" />}
