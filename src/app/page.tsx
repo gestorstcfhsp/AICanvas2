@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { SidebarProvider, Sidebar, SidebarInset, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarMenuBadge } from '@/components/ui/sidebar';
 import Header from '@/components/layout/Header';
 import GeminiControlPanel from '@/components/sidebar/GeminiControlPanel';
-import BatchControlPanel from '@/components/sidebar/BatchControlPanel';
+import LocalControlPanel from '@/components/sidebar/LocalControlPanel';
 import PromptGeneratorPanel from '@/components/sidebar/PromptGeneratorPanel';
 import ImageHistory from '@/components/gallery/ImageHistory';
 import ImageInspector from '@/components/gallery/ImageInspector';
@@ -15,7 +15,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { AppContext } from '@/context/AppContext';
 import { Sparkles, History, FileText, Bot } from 'lucide-react';
 
-type View = 'gemini' | 'batch' | 'prompt-generator' | 'history';
+type View = 'gemini' | 'local' | 'prompt-generator' | 'history';
 
 const PROMPTS_STORAGE_KEY = 'generatedPrompts';
 
@@ -35,8 +35,8 @@ function AppSidebar({ activeView, setActiveView, imageCount }: { activeView: Vie
         </SidebarMenuItem>
          <SidebarMenuItem>
           <SidebarMenuButton 
-            isActive={activeView === 'batch'} 
-            onClick={() => setActiveView('batch')}
+            isActive={activeView === 'local'} 
+            onClick={() => setActiveView('local')}
             tooltip="Generación por Lotes (Local)"
           >
             <Bot />
@@ -124,7 +124,7 @@ export default function Home() {
             <Header />
             <main className="flex-1 overflow-y-auto">
               {activeView === 'gemini' && <GeminiControlPanel />}
-              {activeView === 'batch' && <BatchControlPanel />}
+              {activeView === 'local' && <LocalControlPanel />}
               {activeView === 'prompt-generator' && <PromptGeneratorPanel generatedPrompts={generatedPrompts} setGeneratedPrompts={handleSetGeneratedPrompts} />}
               {activeView === 'history' && <ImageHistory />}
             </main>
