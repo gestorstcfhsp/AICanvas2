@@ -37,10 +37,10 @@ function AppSidebar({ activeView, setActiveView, imageCount }: { activeView: Vie
           <SidebarMenuButton 
             isActive={activeView === 'local'} 
             onClick={() => setActiveView('local')}
-            tooltip="Generación por Lotes (Local)"
+            tooltip="Generación (Local)"
           >
             <Bot />
-            <span>Lotes (Local)</span>
+            <span>Local</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
          <SidebarMenuItem>
