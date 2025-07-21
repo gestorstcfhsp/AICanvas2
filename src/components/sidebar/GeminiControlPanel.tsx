@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState } from 'react';
@@ -34,7 +33,6 @@ export default function GeminiControlPanel() {
       return;
     }
     setIsRefining(true);
-    // Store original prompt before refining
     setOriginalPrompt(promptText);
     try {
       const result = await refinePrompt({ promptText, model: refinementModel });
@@ -74,8 +72,11 @@ export default function GeminiControlPanel() {
       
       await db.images.add(newImage);
       toast({ title: '¡Imagen Generada!', description: 'Tu nueva imagen ha sido guardada en el historial.' });
-      setPromptText('');
       setOriginalPrompt('');
+      // No limpiar el prompt en caso de error
+      if (!originalPrompt) {
+          setPromptText('');
+      }
     } catch (error: any) {
       console.error('Generation failed:', error);
       let description = 'No se pudo generar la imagen.';

@@ -36,7 +36,6 @@ export async function getLocalConfig(apiEndpoint: string): Promise<any> {
 
         return await response.json();
     } catch (error: any) {
-        // Re-throw a more user-friendly error message.
         if (error.message.startsWith('Error de la API local')) {
             throw error;
         }
@@ -66,6 +65,7 @@ export async function generateImageLocal({
         payload.override_settings = {
             sd_model_checkpoint: checkpointModel,
         };
+        payload.override_settings_restore_afterwards = true;
     }
 
     try {
@@ -86,7 +86,6 @@ export async function generateImageLocal({
 
         return `data:image/png;base64,${result.images[0]}`;
     } catch (error: any) {
-        // Re-throw a more user-friendly error message.
          if (error.message.startsWith('Error de la API local')) {
             throw error;
         }

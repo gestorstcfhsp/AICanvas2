@@ -1,7 +1,6 @@
-
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -66,7 +65,6 @@ export default function LocalControlPanel() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [batchResults, setBatchResults] = useState<BatchResult[]>([]);
 
-  // Local state for Stable Diffusion
   const [apiEndpoint, setApiEndpoint] = useState('http://127.0.0.1:7860/sdapi/v1/txt2img');
   const [checkpointModel, setCheckpointModel] = useState('');
   const [negativePrompt, setNegativePrompt] = useState('');
@@ -112,13 +110,12 @@ export default function LocalControlPanel() {
     const initialResults = prompts.map((prompt, index) => ({ id: Date.now() + index, prompt, status: 'pending' as const }));
     setBatchResults(initialResults);
     
-    // Capture the current checkpoint model to use for the whole batch
     const batchCheckpointModel = checkpointModel;
 
     for (let i = 0; i < prompts.length; i++) {
         const currentResultId = initialResults[i].id;
+        const prompt = prompts[i];
         try {
-            const prompt = prompts[i];
             const imageUrl = await generateImageLocal({
                 apiEndpoint,
                 prompt,
