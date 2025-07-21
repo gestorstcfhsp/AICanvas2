@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Bot, Loader2, DownloadCloud, Play } from 'lucide-react';
+import { Bot, Loader2, DownloadCloud, Play, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { db, type AIImage } from '@/lib/db';
 import { dataUrlToBlob, getImageMetadata } from '@/lib/utils';
@@ -14,8 +14,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '../ui/input';
 import { Slider } from '../ui/slider';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import BatchResultItem from './BatchResultItem';
 import { getLocalConfig, generateImageLocal } from '@/lib/local-engine';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 export interface BatchResult {
   id: number;
@@ -23,6 +23,42 @@ export interface BatchResult {
   status: 'pending' | 'success' | 'failed';
   error?: string;
 }
+
+function BatchResultItem({ result }: { result: BatchResult }) {
+  const getStatusIcon = () => {
+    switch (result.status) {
+      case 'success':
+        return <CheckCircle2 className="h-5 w-5 text-green-500" />;
+      case 'failed':
+        return <XCircle className="h-5 w-5 text-red-500" />;
+      case 'pending':
+        return <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />;
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="p-2 rounded-md bg-muted/50">
+      <div className="flex items-start gap-3">
+        <div className="mt-1">{getStatusIcon()}</div>
+        <div className="flex-1 space-y-1">
+          <p className="text-sm font-medium leading-none truncate">{result.prompt}</p>
+          {result.status === 'failed' && (
+            <Alert variant="destructive" className="mt-2 p-2 text-xs">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle className="font-bold">Error</AlertTitle>
+                <AlertDescription>
+                    {result.error}
+                </AlertDescription>
+            </Alert>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 export default function LocalControlPanel() {
   const { toast } = useToast();
@@ -75,6 +111,9 @@ export default function LocalControlPanel() {
     setIsGenerating(true);
     const initialResults = prompts.map((prompt, index) => ({ id: Date.now() + index, prompt, status: 'pending' as const }));
     setBatchResults(initialResults);
+    
+    // Capture the current checkpoint model to use for the whole batch
+    const batchCheckpointModel = checkpointModel;
 
     for (let i = 0; i < prompts.length; i++) {
         const currentResultId = initialResults[i].id;
@@ -86,7 +125,7 @@ export default function LocalControlPanel() {
                 negativePrompt,
                 steps: steps[0],
                 cfgScale: cfgScale[0],
-                checkpointModel
+                checkpointModel: batchCheckpointModel,
             });
             
             const blob = await dataUrlToBlob(imageUrl);
@@ -103,7 +142,7 @@ export default function LocalControlPanel() {
                 tags: [],
                 blob,
                 createdAt: new Date(),
-                checkpointModel,
+                checkpointModel: batchCheckpointModel,
             };
 
             await db.images.add(newImage as AIImage);
