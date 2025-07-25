@@ -6,15 +6,16 @@ import { SidebarProvider, Sidebar, SidebarInset, SidebarContent, SidebarMenu, Si
 import Header from '@/components/layout/Header';
 import GeminiControlPanel from '@/components/sidebar/GeminiControlPanel';
 import PromptGeneratorPanel from '@/components/sidebar/PromptGeneratorPanel';
+import BatchControlPanel from '@/components/sidebar/BatchControlPanel';
 import ImageHistory from '@/components/gallery/ImageHistory';
 import ImageInspector from '@/components/gallery/ImageInspector';
 import type { AIImage } from '@/lib/db';
 import { db } from '@/lib/db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { AppContext } from '@/context/AppContext';
-import { Sparkles, History, FileText } from 'lucide-react';
+import { Sparkles, History, FileText, Layers } from 'lucide-react';
 
-type View = 'gemini' | 'prompt-generator' | 'history';
+type View = 'gemini' | 'prompt-generator' | 'batch' | 'history';
 
 const PROMPTS_STORAGE_KEY = 'generatedPrompts';
 
@@ -40,6 +41,16 @@ function AppSidebar({ activeView, setActiveView, imageCount }: { activeView: Vie
           >
             <FileText />
             <span>Desde Doc.</span>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+         <SidebarMenuItem>
+          <SidebarMenuButton 
+            isActive={activeView === 'batch'} 
+            onClick={() => setActiveView('batch')}
+            tooltip="Generación por Lotes"
+          >
+            <Layers />
+            <span>Por Lotes</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
         <SidebarMenuItem>
@@ -114,6 +125,7 @@ export default function Home() {
             <main className="flex-1 overflow-y-auto">
               {activeView === 'gemini' && <GeminiControlPanel />}
               {activeView === 'prompt-generator' && <PromptGeneratorPanel generatedPrompts={generatedPrompts} setGeneratedPrompts={handleSetGeneratedPrompts} />}
+              {activeView === 'batch' && <BatchControlPanel />}
               {activeView === 'history' && <ImageHistory />}
             </main>
           </div>
